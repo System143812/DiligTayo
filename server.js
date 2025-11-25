@@ -15,10 +15,10 @@ app.use('/', express.static('public'));
 app.get('/api/clickButton', (req, res) => {
     console.log("Button on esp32 was clicked hehe!");
     io.emit('update-ui', { message: "Button was clicked!", timestamp: new Date().toLocaleTimeString() });
-    res.status(200).send('Received');
+    res.status(200).json({message: 'Received'});
 })
 
 const PORT = 3007;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port: ${PORT}`);
 });

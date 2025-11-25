@@ -1,11 +1,13 @@
 :root {
-    --green-dark: rgba(53, 91, 51, 1);
-    --green-low-opacity: rgba(53, 91, 51, 1);
+    --green-dark: #355b33;
+    --green-low-opacity: rgba(53, 91, 51, 0.1);
+    --light-green: #8caa45;
     --default-black-text: rgba(40, 40, 40, 1);
     --kape-bg: rgba(247, 244, 235, 1);
     --kape-bg2: rgba(242, 240, 229, 1);
     --kape-bg-low: rgba(247, 244, 235, 0.7);
     --grayed-text: rgba(102, 102, 102, 1);
+    --light-gray: rgb(174, 182, 175);
     --grayed-low-opacity: rgba(102, 102, 102, 0.1);
     --grayed-no-opacity: rgba(102, 102, 102, 0);
     --overlay-bg: rgba(30, 30, 30, 0.7);
@@ -73,6 +75,7 @@ body {
 
 #outerContainer {
     display: flex;
+    position: relative;
     flex-direction: column;
     position: relative;
     flex: 1;
@@ -117,11 +120,128 @@ body {
 
 #bodyContainer {
     display: flex;
+    position: relative;
     justify-content: center;
-    align-items: center;
     padding: 1rem;
     flex: 1;
+    width: 100%;
     z-index: 1;
+    gap: 1rem;
+}
+
+#logContainer {
+    display: flex;
+    position: absolute;
+    left: 1rem;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#logHeader {
+    display: flex;
+    padding: 0.5rem;
+    padding-left: 0;
+    color: var(--green-dark);
+}
+
+#logBody {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0.5rem;
+    gap: 0.5rem;
+    border: solid var(--green-dark) 0.5px;
+    background-color: var(--green-low-opacity);
+    backdrop-filter: blur(5px);
+}
+
+.logCards {
+    display: flex;
+    width: 100%;
+}
+
+#plantContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 300px;
+    height: 100%;
+}
+
+#plantNicknameContainer {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+}
+
+#plantNickname {
+    font-size: 24px;
+    flex-wrap: wrap;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-top: 1rem;
+    color: var(--grayed-text);
+}
+
+#plantStatus {
+    display: flex;
+    position: absolute;
+    top: 0rem;
+    right: -2.5rem;
+    padding: 0.25rem 0.5rem;
+    transform: rotate(15deg);
+    background-color: var(--light-green);
+    color: var(--kape-bg);
+    border-radius: 5px;
+    z-index: 1;
+}
+
+#scientificName {
+    color: var(--green-dark);
+}
+
+#plantImage {
+    display: flex;
+    height: 300px;
+    width: 300px;
+    background-image: url('/assets/pictures/plant1.png');
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+#buttonContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.5rem;
+    gap: 1rem;
+}
+
+#previousBtn, #nextBtn {
+    display: flex;
+    height: 50px;
+    width: 50px;
+    border-radius: 10px;
+    background-color: var(--grayed-no-opacity);
+    background-image: url('/assets/icons/right.png');
+    background-position: center;
+    background-size: 30px 30px;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    transition: all 0.5s ease;
+}
+
+#previousBtn:hover, #nextBtn:hover {
+    background-color: var(--grayed-low-opacity);
+}
+
+#previousBtn {
+    transform: rotate(180deg);
 }
 
 #clickMeBtn {
@@ -135,8 +255,8 @@ body {
     box-shadow: 0 0 0 0 var(--grayed-no-opacity);
     align-items: center;
     justify-content: center;
-    padding: 1rem 3rem;
-    margin-top: 20rem;
+    text-align: center;
+    padding: 1rem 2rem;
     cursor: pointer;
     transition: all 0.25s ease;
 }
@@ -146,4 +266,128 @@ body {
     background-color: var(--green-dark);
     border: solid var(--green-dark) 1px;
     box-shadow: var(--btn-shadow);
+}
+
+#clickMeBtn:active {
+    opacity: 0.75;
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 var(--grayed-no-opacity);
+}
+
+#recentWaterStatus {
+    display: flex;
+    text-align: center;
+    color: var(--grayed-text);
+}
+
+#plantDataContainer {
+    display: flex;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    right: 1rem;
+    height: fit-content;
+    flex-direction: column;
+    padding: 1rem;
+    background: linear-gradient(to bottom right, var(--kape-bg) 0%, var(--green-low-opacity)50%);
+    backdrop-filter: blur(15px);
+    border-radius: 10px;
+    z-index: 2;
+    transition: all 0.5s ease;
+}
+
+#plantDataContainer.show {
+    opacity: 1;
+}
+
+#plantDataCloseInvi {
+    display: flex;
+    margin-left: auto;
+    width: 25px;
+    height: 25px;
+}
+
+#plantDataToggleBtn {
+    display: flex;
+    position: absolute;
+    right: 2rem;
+    top: 2rem;
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    background-color: var(--grayed-no-opacity);
+    background-image: url('/assets/icons/leaf.png');
+    background-position: center;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
+    transition: all 1s ease;
+    z-index: 3;
+}
+
+#plantDataToggleBtn:hover {
+    background-color: var(--grayed-low-opacity);
+}
+
+#plantDataToggleBtn.show {
+    background-image: url('/assets/icons/close.png');
+}
+
+.plant-status-container {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.5rem;
+}
+
+
+#soilDataTitle, #humidityDataTitle {
+    display: flex;
+    background-color: var(--green-low-opacity);
+    border-radius: 50px;
+    width: fit-content;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--green-dark);
+}
+
+#soilDataStatus, #humidityDataStatus {
+    display: flex;
+    font-weight: 600;
+    font-size: 24px;
+    color: var(--green-dark);
+}
+
+.bar-containers {
+    display: flex;
+    width: 100%;
+    height: 8px;
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(to right, var(--green-dark) 50%, var(--light-green) 70%);
+    border-radius: 50px;
+}
+
+.bars {
+    display: flex;
+    height: 100%;
+    border-radius: 50px;
+    width: 100%;
+}
+
+#soilProgressBar {
+     background: linear-gradient(to right, var(--grayed-no-opacity) 37%, var(--light-gray) 37%);
+}
+
+#humidityProgressBar {
+    background: linear-gradient(to right, var(--grayed-no-opacity) 75%, var(--light-gray) 75%);
+}
+
+.progress-percent {
+    display: flex;
+    text-align: center;
+    width: 100%;
+    color: var(--green-dark);
+}
+
+@media (max-width: 800px){
+    
 }
