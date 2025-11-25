@@ -1,0 +1,149 @@
+:root {
+    --green-dark: rgba(53, 91, 51, 1);
+    --green-low-opacity: rgba(53, 91, 51, 1);
+    --default-black-text: rgba(40, 40, 40, 1);
+    --kape-bg: rgba(247, 244, 235, 1);
+    --kape-bg2: rgba(242, 240, 229, 1);
+    --kape-bg-low: rgba(247, 244, 235, 0.7);
+    --grayed-text: rgba(102, 102, 102, 1);
+    --grayed-low-opacity: rgba(102, 102, 102, 0.1);
+    --grayed-no-opacity: rgba(102, 102, 102, 0);
+    --overlay-bg: rgba(30, 30, 30, 0.7);
+    --overlay-bg-low: rgba(30, 30, 30, 0.5);
+    --light-border: rgba(204, 204, 204, 0.9);
+    --btn-shadow: 1px 1px 10px 1px rgba(30, 30, 30, 0.5);
+
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: url('/assets/fonts/Poppins/Poppins-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    color: var(--default-black-text);
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--kape-bg);
+}
+
+#loadingOverlay {
+    display: flex;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    height: 100%;
+    width: 100%;
+    max-width: 100vh;
+    max-width: 100vw;
+    background-color: var(--overlay-bg);
+    background-image: url('/assets/pictures/fade-dots.svg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 50px 50px;
+    z-index: 10;
+    transition: all 0.15s ease;
+}
+
+#outerContainer {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex: 1;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    background-image: url('/assets/pictures/DiligTayoLogo-Styled.png');
+    background-size: 800px 800px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#outerContainer::before {
+    content: "";
+    display: flex;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background-color: var(--kape-bg-low);
+    backdrop-filter: blur(2px);
+    z-index: 0;
+}
+
+#headerContainer {
+    display: flex;
+    padding: 0.75rem 0;
+    width: 100%;
+    background-color: var(--kape-bg2);
+    box-shadow: 0 1px 10px 1px var(--overlay-bg-low);
+    z-index: 1;
+}
+
+#logoDiv {
+    display: flex;
+    height: 50px;
+    width: 175px;
+    background-image: url('/assets/pictures/DiligTayoLogo-Minimal.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#bodyContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    flex: 1;
+    z-index: 1;
+}
+
+#clickMeBtn {
+    display: flex;
+    background-color: var(--grayed-no-opacity);
+    color: var(--green-dark);
+    font-size: 16px;
+    font-weight: 600;
+    border: solid var(--green-dark) 1px;
+    border-radius: 50px; 
+    box-shadow: 0 0 0 0 var(--grayed-no-opacity);
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 3rem;
+    margin-top: 20rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+#clickMeBtn:hover {
+    color: var(--kape-bg);
+    background-color: var(--green-dark);
+    border: solid var(--green-dark) 1px;
+    box-shadow: var(--btn-shadow);
+}
