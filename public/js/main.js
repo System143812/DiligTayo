@@ -2,6 +2,8 @@
 const loader = document.getElementById('loadingOverlay');
 const socket = io();
 const clickBtn = document.getElementById('clickMeBtn');
+const infoShowBtn = document.getElementById('plantDataToggleBtn');
+const infoContainer = document.getElementById('plantDataContainer');
 const bodyContainer = document.getElementById('bodyContainer');
 function showLoader() {
     loader.style.opacity = 1;
@@ -39,9 +41,16 @@ async function initEventListeners() {
         const data = await fetchGetData('/api/clickButton');
         if(data === "error") return;
     });
+    infoShowBtn.addEventListener("click", () => {
+        if(infoShowBtn.classList.contains("show")){
+            infoShowBtn.classList.remove("show");
+            infoContainer.classList.remove("show");
+        } else {
+            infoShowBtn.classList.add('show');
+            infoContainer.classList.add("show");
+        }
+    });
 }
-
-
 
 window.onload = async() => {
     // initPageContents();
