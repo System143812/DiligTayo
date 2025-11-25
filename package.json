@@ -1,0 +1,29 @@
+{
+  "name": "diligtayo",
+  "version": "1.0.0",
+  "description": "An IoT project for greenhouse plant monitoring &amp; automation using websockets and esp32.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/System143812/DiligTayo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/System143812/DiligTayo/issues"
+  },
+  "homepage": "https://github.com/System143812/DiligTayo#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  },
+  "type": "module"
+}
