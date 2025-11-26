@@ -251,10 +251,10 @@ body {
 }
 
 #logBody {
-    display: flex;
+    display: none;
+    pointer-events: none;
     flex-direction: column;
     opacity: 0;
-    pointer-events: none;
     max-height: 400px;
     overflow-y: auto;
     border: solid var(--light-border) 0.5px;
@@ -266,8 +266,8 @@ body {
 }
 
 #logBody.show {
+    display: flex;
     pointer-events: auto;
-    opacity: 1;
 }
 
 .log-cards {
@@ -366,6 +366,7 @@ body {
     backdrop-filter: blur(10px);
     padding: 0.5rem 1rem;
     opacity: 0;
+    transform: translateX(0);
     animation: popupFadeUp 3s forwards;
     transition: all 0.5s ease;
 }

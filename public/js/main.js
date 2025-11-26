@@ -14,6 +14,8 @@ const currentPlant = document.getElementById('plantNickname').innerText;
 const plantImage = document.getElementById('plantImage');
 const usernamePromptContainer = document.getElementById('usernamePromptContainer');
 
+let socket;
+
 function showLoader() { loader.style.opacity = 1 }
 function hideLoader() { loader.style.opacity = 0 }
 showLoader();
@@ -28,11 +30,18 @@ const randomMsg = [
     '+10exp',
     'Watering successful',
     "Don't drown it!",
-    'Good Job!',
+    'Good Job! 👍',
     '+20hp',
-    'Keep it up, Plantito!',
+    'Keep it up, Plantito! 🌳',
     '+30respect',
-    'Need more water!'
+    'Need more water!',
+    'Aray mo',
+    'Lunod na pre',
+    'Sanaol dinidiligan💦',
+    'Paldo 🤑',
+    'PLANT: TY yah😘',
+    'PLANT: Awit sayo sah',
+    'Alam mo ah 😏'
 ];
 
 async function fetchGetData(url) {
@@ -47,9 +56,7 @@ async function fetchGetData(url) {
     }
 }
 
-async function initDashboard() {
-    const socket = io();
-
+async function initDashboard(socket) {
     socket.on('createLog', (data) => {
         const logCards = document.createElement('div');
         logCards.classList.add('log-cards');
@@ -69,11 +76,12 @@ async function initDashboard() {
 
 function popupNotif() {
     const popupDiv = document.createElement('div');
-    const randWidthHeight = Math.random() * 300;
+    const randHeight = Math.floor(Math.random() * 50);
+    const randWidth = Math.floor(Math.random() * 150);
     const randomMessage = randomMsg[Math.floor(Math.random() * randomMsg.length)];
     popupDiv.id = 'popupNotif';
-    popupDiv.style.left = `${randWidthHeight}px`;
-    popupDiv.style.bottom = `${randWidthHeight}px`;
+    popupDiv.style.left = `${randWidth}px`;
+    popupDiv.style.bottom = `${randHeight}px`;
     popupDiv.innerText = randomMessage;
 
     setTimeout(() => {
@@ -86,26 +94,17 @@ async function initEventListeners(socket) {
     logHeader.addEventListener("click", () => {
         if(logIcon.classList.contains("show")) {
             logIcon.classList.remove("show");
-            logBody.classList.remove("show");
+            logBody.style.opacity = 0;
             setTimeout(() => {
-                logBody.classList.display = 'none';
-            }, 50);
+                logBody.classList.remove("show");
+            }, 550);
         } else {
-            logBody.classList.display = 'flex';
+            logBody.classList.add("show");  
             setTimeout(() => {
                 logIcon.classList.add("show");
-                logBody.classList.add("show");        
+                logBody.style.opacity = 1;
             }, 50);
         }
-    });
-
-    usernameSubmitBtn.addEventListener('click', () => {
-        if(usernameInput.value === "") return showRequired(usernameInput);
-        usernameInput.classList.remove('required');
-        const username = usernameInput.value;
-        Cookies.set("username",  username, { expires : 1, path : '/'});
-        socket.emit('getUsername', {username: Cookies.get("username")});
-        hideUserOverlay();
     });
 
     clickBtn.addEventListener("click", async() => {
@@ -124,13 +123,37 @@ async function initEventListeners(socket) {
     });
 }
 
+async function clickInitUser() {
+    usernameSubmitBtn.addEventListener('click', async() => {
+        if(usernameInput.value === "") return showRequired(usernameInput);
+        usernameInput.classList.remove('required');
+        const username = usernameInput.value;
+        Cookies.set("username",  username, {
+            expires : 1,
+            path : "/",
+            sameSite: "lax",
+            secure: true
+        });
+        initWebsocketUser();
+        hideUserOverlay();
+    });
+}
+
+async function initWebsocketUser() {
+        socket = io();
+        socket.emit('getUsername');
+        await initDashboard(socket);    
+} 
+
+
 window.onload = async() => {
     // Cookies.remove("username"); //Pang force reset lang to
     if(!Cookies.get("username")) {
         showUserOverlay();
+        await clickInitUser()
     } else {
         hideUserOverlay();
+        await initWebsocketUser();
     }
-    await initDashboard();
     hideLoader();
 }
