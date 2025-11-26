@@ -2,6 +2,8 @@
     --green-dark: #355b33;
     --green-low-opacity: rgba(53, 91, 51, 0.1);
     --light-green: #8caa45;
+    --red-border: rgb(220, 38, 38); 
+    --red-background: rgba(220, 38, 38, 0.1);
     --default-black-text: rgba(40, 40, 40, 1);
     --kape-bg: rgba(247, 244, 235, 1);
     --kape-bg2: rgba(242, 240, 229, 1);
@@ -14,7 +16,7 @@
     --overlay-bg-low: rgba(30, 30, 30, 0.5);
     --light-border: rgba(204, 204, 204, 0.9);
     --btn-shadow: 1px 1px 10px 1px rgba(30, 30, 30, 0.5);
-
+    --notif-starting-point: 
 }
 
 @font-face {
@@ -71,6 +73,74 @@ body {
     background-size: 50px 50px;
     z-index: 10;
     transition: all 0.15s ease;
+}
+
+#usernamePromptOverlay {
+    display: flex;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    background-color: var(--overlay-bg-low);
+    backdrop-filter: blur(10px);
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    transition: all 0.5s ease;
+}
+
+#usernamePromptOverlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#usernamePromptContainer {
+    display: flex;
+    flex-direction: column;
+    padding: 3rem 4rem;
+    gap: 2rem;
+    border-radius: 5px;
+    background-color: rgba(253, 253, 253, 0.7);
+    backdrop-filter: blur(10px);
+}
+
+#usernamePromptHeader {
+    display: flex;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green-dark);
+}
+
+#usernameInput {
+    padding: 0.75rem;    
+    border-radius: 5px;
+    border: solid var(--grayed-text) 1px;
+    background-color: var(--green-low-opacity);
+    transition: all 0.5s ease;
+}
+
+#usernameInput.required {
+    border: solid var(--red-border) 1px;
+    background-color: var(--red-background);
+}
+
+#usernameSubmitBtn {
+    display: flex;
+    justify-content: center;
+    background-color: var(--green-dark);
+    font-weight: 600;
+    color: var(--kape-bg);
+    padding: 1rem;
+    border-radius: 5px;
+    border: solid var(--green-dark) 1px;
+    
+}
+
+#usernameSubmitBtn:hover {
+    opacity: 0.75;
 }
 
 #outerContainer {
@@ -155,9 +225,25 @@ body {
     backdrop-filter: blur(5px);
 }
 
-.logCards {
+.log-cards {
     display: flex;
+    flex-direction: column;
     width: 100%;
+}
+
+.log-message, .log-date {
+    display: flex;
+    align-items: center;
+    text-align: center;
+}
+
+.log-message {
+    font-weight: 600;
+    color: var(--green-dark);
+}
+
+.log-date {
+    color: var(--grayed-text);
 }
 
 #plantContainer {
@@ -206,12 +292,21 @@ body {
 
 #plantImage {
     display: flex;
+    position: relative;
     height: 300px;
     width: 300px;
     background-image: url('/assets/pictures/plant1.png');
     background-position: center;
     background-size: contain;
     background-repeat: no-repeat;
+}
+
+#popupNotif {
+    display: flex;
+    position: absolute;
+    opacity: 0;
+    animation: popupFadeUp 3s forwards;
+    transition: all 0.5s ease;
 }
 
 #buttonContainer {
@@ -289,22 +384,16 @@ body {
     height: fit-content;
     flex-direction: column;
     padding: 1rem;
-    background: linear-gradient(to bottom right, var(--kape-bg) 0%, var(--green-low-opacity)50%);
+    background: linear-gradient(to bottom right, var(--grayed-no-opacity) 0%, var(--kape-bg-low)50%);
     backdrop-filter: blur(15px);
     border-radius: 10px;
     z-index: 2;
+    box-shadow: var(--btn-shadow);
     transition: all 0.5s ease;
 }
 
 #plantDataContainer.show {
     opacity: 1;
-}
-
-#plantDataCloseInvi {
-    display: flex;
-    margin-left: auto;
-    width: 25px;
-    height: 25px;
 }
 
 #plantDataToggleBtn {
@@ -337,7 +426,6 @@ body {
     flex-direction: column;
     padding: 1rem 1.5rem;
 }
-
 
 #soilDataTitle, #humidityDataTitle {
     display: flex;
@@ -390,4 +478,21 @@ body {
 
 @media (max-width: 800px){
     
+}
+
+@keyframes popupFadeUp {
+    0% { 
+        transform: translateY(0); 
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
 }

@@ -9,6 +9,13 @@
 </head>
 <body>
     <div id="loadingOverlay"></div>
+    <div id="usernamePromptOverlay">
+        <div id="usernamePromptContainer">
+            <div id="usernamePromptHeader">What should we call you?</div>
+            <input type="text" id="usernameInput" class="inputBox" placeholder="Username" required>
+            <button type="submit" id="usernameSubmitBtn">Start Garden</button>
+        </div>
+    </div>
     <div id="outerContainer">
         <div id="infoOverlay"></div>
         
@@ -19,7 +26,10 @@
             <div id="logContainer">
                 <div id="logHeader">Recent Activities</div>
                 <div id="logBody">
-                    
+                    <div class="log-cards">
+                        <div class="log-message">Rafael watered Gabby's Indoor Plant</div>
+                        <div class="log-date">4:07 PM | Yesterday</div>
+                    </div>
                 </div>
             </div>
             <div id="plantContainer">
@@ -37,7 +47,6 @@
                 <div id="recentWaterStatus">Last Watered | 4:07 PM Yesterday</div>
             </div>
             <div id="plantDataContainer">
-                <div id="plantDataCloseInvi"></div>
                 <div id="plantSoilData" class="plant-status-container">
                     <div id="soilDataTitle">Soil Moisture</div>
                     <div id="soilDataStatus">Slightly Moist</div>
@@ -59,6 +68,7 @@
         </div>
     </div>
 </body>
+<script src="/js/js.cookie.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/main.js" type="module"></script>
 </html>
