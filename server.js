@@ -15,17 +15,16 @@ app.use(express.json());
 app.use('/', express.static('public'));
 
 io.on("connection", (socket) => {
-    socket.on('getUsername', (data) => {
-        socket.username = data.username || "Unknown User";
-    });
-    // const cookies = cookie.parse(socket.handshake.headers.cookie || "");
-    // socket.username = cookies.username || "Unknown User";
+    const cookies = cookie.parse(socket.handshake.headers.cookie);
+    socket.username = cookies.username || "Unknown user";
+
+    
     socket.on('waterPlant', (data) => {
         io.emit('createLog', {username: socket.username, timestamp: data.timestamp});
     });
 });
 
 const PORT = 3007;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, () => {
     console.log(`Server is running on port: ${PORT}`);
 });
