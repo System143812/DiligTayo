@@ -1,17 +1,37 @@
 
 const loader = document.getElementById('loadingOverlay');
-const socket = io();
 const clickBtn = document.getElementById('clickMeBtn');
+const startBtn = document.getElementById('')
 const infoShowBtn = document.getElementById('plantDataToggleBtn');
 const infoContainer = document.getElementById('plantDataContainer');
-const bodyContainer = document.getElementById('bodyContainer');
-function showLoader() {
-    loader.style.opacity = 1;
-}
-function hideLoader() {
-    loader.style.opacity = 0;
-}
+const promptOverlay = document.getElementById('usernamePromptOverlay');
+const usernameInput = document.getElementById('usernameInput');
+const usernameSubmitBtn = document.getElementById('usernameSubmitBtn');
+const logBody = document.getElementById('logBody');
+const currentPlant = document.getElementById('plantNickname').innerText;
+const plantImage = document.getElementById('plantImage');
+const usernamePromptContainer = document.getElementById('usernamePromptContainer');
+
+function showLoader() { loader.style.opacity = 1 }
+function hideLoader() { loader.style.opacity = 0 }
 showLoader();
+
+function showUserOverlay() { promptOverlay.classList.add("show") }
+function hideUserOverlay() { promptOverlay.classList.remove("show") }
+function showRequired(inputField) {
+    inputField.classList.add('required');
+}
+const randomMsg = [
+    'Successfully watered the plant!',
+    '+10exp',
+    'Watering successful',
+    "Don't drown it!",
+    'Good Job!',
+    '+20hp',
+    'Keep it up, Plantito!',
+    '+30respect',
+    'Need more water!'
+];
 
 async function fetchGetData(url) {
     try {
@@ -25,21 +45,54 @@ async function fetchGetData(url) {
     }
 }
 
-socket.on('update-ui', (data) => {
-    const newResponseBox = document.createElement('div');
-    newResponseBox.className = 'message-boxes';
-    newResponseBox.innerText = `${data.message}\n${data.timestamp}`;
-    bodyContainer.append(newResponseBox);
-});
+async function initDashboard() {
+    const socket = io();
 
-// function initPageContents() {
+    socket.on('createLog', (data) => {
+        const logCards = document.createElement('div');
+        logCards.classList.add('log-cards');
+        const logMessage = document.createElement('div');
+        logMessage.classList.add('log-message');
+        logMessage.innerText = `${data.username} waters ${currentPlant}`;
+        const logDate = document.createElement('div');
+        logDate.classList.add('log-date');
+        logDate.innerText = `${data.timestamp} | Today`;
 
-// }
+        logCards.append(logMessage, logDate);
+        logBody.append(logCards);
+    });
 
-async function initEventListeners() {
+    await initEventListeners(socket);
+}
+
+function popupNotif() {
+    const popupDiv = document.createElement('div');
+    const randWidthHeight = Math.random() * 300;
+    const randomMessage = randomMsg[Math.floor(Math.random() * randomMsg.length)];
+    popupDiv.id = 'popupNotif';
+    popupDiv.style.left = `${randWidthHeight}px`;
+    popupDiv.style.bottom = `${randWidthHeight}px`;
+    popupDiv.innerText = randomMessage;
+
+    setTimeout(() => {
+        popupDiv.style.display = 'none';
+    }, 4000);
+    plantImage.append(popupDiv);
+}
+
+async function initEventListeners(socket) {
+    usernameSubmitBtn.addEventListener('click', () => {
+        if(usernameInput.value === "") return showRequired(usernameInput);
+        usernameInput.classList.remove('required');
+        const username = usernameInput.value;
+        Cookies.set("username",  username, { expires : 1, path : '/'});
+        hideUserOverlay();
+    });
+
     clickBtn.addEventListener("click", async() => {
-        const data = await fetchGetData('/api/clickButton');
-        if(data === "error") return;
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
+        socket.emit('waterPlant', {timestamp: timestamp});
+        popupNotif();
     });
     infoShowBtn.addEventListener("click", () => {
         if(infoShowBtn.classList.contains("show")){
@@ -53,7 +106,12 @@ async function initEventListeners() {
 }
 
 window.onload = async() => {
-    // initPageContents();
-    await initEventListeners();
+    // Cookies.remove("username"); //Pang force reset lang to
+    if(!Cookies.get("username")) {
+        showUserOverlay();
+    } else {
+        hideUserOverlay();
+    }
+    await initDashboard();
     hideLoader();
 }
