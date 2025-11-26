@@ -15,8 +15,11 @@ app.use(express.json());
 app.use('/', express.static('public'));
 
 io.on("connection", (socket) => {
-    const cookies = cookie.parse(socket.handshake.headers.cookie || "");
-    socket.username = cookies.username || "Unknown User";
+    socket.on('getUsername', (data) => {
+        socket.username = data.username || "Unknown User";
+    });
+    // const cookies = cookie.parse(socket.handshake.headers.cookie || "");
+    // socket.username = cookies.username || "Unknown User";
     socket.on('waterPlant', (data) => {
         io.emit('createLog', {username: socket.username, timestamp: data.timestamp});
     });
