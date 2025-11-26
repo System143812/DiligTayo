@@ -8,6 +8,8 @@ const promptOverlay = document.getElementById('usernamePromptOverlay');
 const usernameInput = document.getElementById('usernameInput');
 const usernameSubmitBtn = document.getElementById('usernameSubmitBtn');
 const logBody = document.getElementById('logBody');
+const logIcon = document.getElementById('logHeaderIcon');
+const logHeader = document.getElementById('logHeaderContainer');
 const currentPlant = document.getElementById('plantNickname').innerText;
 const plantImage = document.getElementById('plantImage');
 const usernamePromptContainer = document.getElementById('usernamePromptContainer');
@@ -59,7 +61,7 @@ async function initDashboard() {
         logDate.innerText = `${data.timestamp} | Today`;
 
         logCards.append(logMessage, logDate);
-        logBody.append(logCards);
+        logBody.prepend(logCards);
     });
 
     await initEventListeners(socket);
@@ -81,11 +83,28 @@ function popupNotif() {
 }
 
 async function initEventListeners(socket) {
+    logHeader.addEventListener("click", () => {
+        if(logIcon.classList.contains("show")) {
+            logIcon.classList.remove("show");
+            logBody.classList.remove("show");
+            setTimeout(() => {
+                logBody.classList.display = 'none';
+            }, 50);
+        } else {
+            logBody.classList.display = 'flex';
+            setTimeout(() => {
+                logIcon.classList.add("show");
+                logBody.classList.add("show");        
+            }, 50);
+        }
+    });
+
     usernameSubmitBtn.addEventListener('click', () => {
         if(usernameInput.value === "") return showRequired(usernameInput);
         usernameInput.classList.remove('required');
         const username = usernameInput.value;
         Cookies.set("username",  username, { expires : 1, path : '/'});
+        socket.emit('getUsername', {username: Cookies.get("username")});
         hideUserOverlay();
     });
 
