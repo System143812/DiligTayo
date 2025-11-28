@@ -21,6 +21,17 @@
         
         <div id="headerContainer">
             <div id="logoDiv"></div>
+            <div id="statusSummaryContainer">
+                <div id="moistureSummaryCard">
+                    <span id="moistureIcon" class="header-icons"></span>
+                    <span id="moisturePercentage" class="header-pct"></span>
+                </div>
+                <div id="humiditySummaryCard">
+                    <span id="humidityIcon" class="header-icons"></span>
+                    <span id="humidityPercentage" class="header-pct"></span>
+                </div>
+            </div>
+            <span id="usernameContainer"></span>
         </div>
         <div id="bodyContainer">
             <div id="logContainer">
@@ -28,12 +39,7 @@
                     <div id="logHeader">Recent Activities</div>
                     <div id="logHeaderIcon"></div>
                 </div>
-                <div id="logBody">
-                    <div class="log-cards">
-                        <div class="log-message">Rafael watered Gabby's Indoor Plant</div>
-                        <div class="log-date">4:07 PM | Yesterday</div>
-                    </div>
-                </div>
+                <div id="logBody"></div>
             </div>
             <div id="plantContainer">
                 <div id="plantImage"></div>
@@ -42,21 +48,25 @@
                     <div id="clickMeBtn">Water Plant</div>
                     <div id="nextBtn"></div>
                 </div>
+                <div id="roundNavContainer"></div>
                 <div id="plantNicknameContainer">
-                    <div id="plantNickname">Gabby's Indoor Plant</div>
-                    <div id="plantStatus">Healthy</div>
+                    <div id="plantNickname"></div>
+                    <div id="plantStatusContainer">
+                        <div id="plantStatus" class="plant-status"></div>
+                    </div>
+                    
                 </div>
-                <div id="scientificName">Philodendron</div>
-                <div id="recentWaterStatus">Last Watered | 4:07 PM Yesterday</div>
+                <div id="scientificName"></div>
+                <div id="recentWaterStatus"></div>
             </div>
             <div id="plantDataContainer">
                 <div id="plantSoilData" class="plant-status-container">
                     <div id="soilDataTitle">Soil Moisture</div>
-                    <div id="soilDataStatus">Slightly Moist</div>
+                    <div id="soilDataStatus">Moist</div>
                     <div id="soilBarContainer" class="bar-containers">
                         <div id="soilProgressBar" class="bars"></div>
                     </div>
-                    <div id="soilProgressPercentage" class="progress-percent">38%</div>
+                    <div id="soilProgressPercentage" class="progress-percent"></div>
                 </div>
                 <div id="plantHumidityData" class="plant-status-container">
                     <div id="humidityDataTitle">Humidity</div>
@@ -64,7 +74,7 @@
                     <div id="humidityBarContainer" class="bar-containers">
                         <div id="humidityProgressBar" class="bars"></div>
                     </div>
-                    <div id="soilProgressPercentage" class="progress-percent">75%</div>
+                    <div id="humidityProgressPercentage" class="progress-percent"></div>
                 </div>
             </div>
             <div id="plantDataToggleBtn"></div>

@@ -1,6 +1,7 @@
 :root {
     --green-dark: #355b33;
     --green-low-opacity: rgba(53, 91, 51, 0.1);
+    --green-mid-opacity: rgba(53, 91, 51, 0.5);
     --light-green: #8caa45;
     --red-border: rgb(220, 38, 38); 
     --red-background: rgba(220, 38, 38, 0.1);
@@ -99,7 +100,8 @@ body {
 #usernamePromptContainer {
     display: flex;
     flex-direction: column;
-    padding: 3rem 4rem;
+    align-items: center;
+    padding: 2rem 2rem;
     gap: 2rem;
     border-radius: 5px;
     background-color: rgba(253, 253, 253, 0.7);
@@ -117,6 +119,7 @@ body {
 #usernameInput {
     padding: 0.75rem;    
     border-radius: 5px;
+    width: 100%;
     border: solid var(--grayed-text) 1px;
     background-color: var(--green-low-opacity);
     transition: all 0.5s ease;
@@ -130,6 +133,7 @@ body {
 #usernameSubmitBtn {
     display: flex;
     justify-content: center;
+    width: 100%;
     background-color: var(--green-dark);
     font-weight: 600;
     color: var(--kape-bg);
@@ -172,6 +176,8 @@ body {
 
 #headerContainer {
     display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.75rem 0;
     width: 100%;
     background-color: var(--kape-bg2);
@@ -181,12 +187,69 @@ body {
 
 #logoDiv {
     display: flex;
-    height: 50px;
-    width: 175px;
+    height: 40px;
+    width: 125px;
     background-image: url('/assets/pictures/DiligTayoLogo-Minimal.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+#statusSummaryContainer {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem;
+    padding-left: 0;
+    justify-self: center;
+    margin-right: auto;
+}
+
+#moistureSummaryCard, #humiditySummaryCard {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+}
+
+#moistureSummaryCard {
+    border-right: solid var(--light-border) 1px;
+    padding-left: 0;
+}
+
+.header-icons {
+    display: flex;
+    height: 25px;
+    width: 25px;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.header-pct {
+    font-weight: 600;
+    color: var(--green-dark);
+}
+
+#moistureIcon {
+    background-image: url('/assets/icons/moisture.png');
+}
+
+#humidityIcon {
+    background-image: url('/assets/icons/humidity.png');
+}
+
+#usernameContainer {
+    flex: 1;
+    max-width: fit-content;
+    text-align: end;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green-dark);
+    padding: 0.5rem;
+    margin-right: 1.5rem;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 #bodyContainer {
@@ -243,7 +306,7 @@ body {
     background-size: cover;
     background-repeat: no-repeat;
     transform: rotate(90deg);
-    transition: all 0.5s ease;
+    transition: all 0.15s ease;
 }
 
 #logHeaderIcon.show {
@@ -262,7 +325,7 @@ body {
     background: linear-gradient(to right, var(--kape-bg-low)0%, var(--kape-bg)100%) ;
     backdrop-filter: blur(2px);
     box-shadow: var(--btn-shadow);
-    transition: all 0.5s ease;
+    transition: all 0.15s ease;
 }
 
 #logBody.show {
@@ -270,10 +333,20 @@ body {
     pointer-events: auto;
 }
 
+#emptyLogPlaceholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    width: 100%;
+}
+
 .log-cards {
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: 250px;
+    text-wrap: wrap;
     padding: 0.5rem;
     border-bottom: solid var(--light-border) 1px;
     background-color: var(--grayed-no-opacity);
@@ -287,7 +360,6 @@ body {
 .log-message, .log-date {
     display: flex;
     align-items: center;
-    text-align: center;
 }
 
 .log-message {
@@ -309,6 +381,26 @@ body {
     padding: 1rem 0;
 }
 
+#roundNavContainer {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;  
+    padding: 0.5rem; 
+}
+
+.round-nav {
+    display: flex;
+    height: 10px;
+    width: 10px;
+    border-radius: 50px;
+    background-color: var(--light-gray);
+    transition: all 0.5s ease;
+}
+
+.round-nav.selected {
+    background-color: var(--green-dark);
+}
+
 #plantNicknameContainer {
     display: flex;
     position: relative;
@@ -323,35 +415,59 @@ body {
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    margin-top: 1rem;
     color: var(--grayed-text);
 }
 
-#plantStatus {
+#plantStatusContainer {
     display: flex;
     position: absolute;
-    top: 0rem;
+    top: -0.75rem;
+    /* bottom: -1.75rem; */
+    gap: 0.25rem;
     right: -2.5rem;
-    padding: 0.25rem 0.5rem;
     transform: rotate(15deg);
-    background-color: var(--light-green);
-    color: var(--kape-bg);
-    border-radius: 5px;
     z-index: 1;
 }
 
+.plant-status {
+    display: flex;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--light-green);
+    color: var(--kape-bg);
+    border-radius: 5px;   
+}
+
+#gold {
+    background-color: rgb(226, 195, 19);
+}
+
+#dried {
+    background-color: rgb(115, 45, 45);
+}
+
+#chilled {
+    background-color: rgb(116, 195, 221);
+}
+
+#bloodlit {
+    background-color: rgb(163, 9, 9);
+}
+
+
 #scientificName {
     color: var(--green-dark);
+    margin-bottom: 0.25rem;
 }
 
 #plantImage {
     display: flex;
     position: relative;
-    height: 300px;
-    width: 300px;
-    background-image: url('/assets/pictures/plant1.png');
+    height: 275px;
+    width: 275px;
+    margin-bottom: 1rem;
+    border-radius: 10px;
     background-position: center;
-    background-size: contain;
+    background-size: cover;
     background-repeat: no-repeat;
 }
 
@@ -362,7 +478,8 @@ body {
     white-space: nowrap;
     border: solid var(--green-dark) 1px;
     border-radius: 10px;
-    background-color: var(--green-low-opacity);
+    background-color: var(--green-mid-opacity);
+    color: #f0f0f0;
     backdrop-filter: blur(10px);
     padding: 0.5rem 1rem;
     opacity: 0;
@@ -444,6 +561,8 @@ body {
     pointer-events: none;
     right: 1rem;
     height: fit-content;
+    width: 225px;
+    max-width: 225px;
     flex-direction: column;
     padding: 1rem;
     background: linear-gradient(to bottom right, var(--grayed-no-opacity) 0%, var(--kape-bg-low)50%);
@@ -523,14 +642,6 @@ body {
     width: 100%;
 }
 
-#soilProgressBar {
-     background: linear-gradient(to right, var(--grayed-no-opacity) 37%, var(--light-gray) 37%);
-}
-
-#humidityProgressBar {
-    background: linear-gradient(to right, var(--grayed-no-opacity) 75%, var(--light-gray) 75%);
-}
-
 .progress-percent {
     display: flex;
     text-align: center;
@@ -541,6 +652,12 @@ body {
 @media (max-width: 800px){
     #outerContainer {
         background-size: 500px 500px;
+    }
+}
+
+@media (max-width: 550px){
+    #usernameContainer {
+        max-width: 75px;
     }
 }
 

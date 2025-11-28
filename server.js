@@ -4,7 +4,10 @@ import { Server } from 'socket.io';
 import http from 'http';
 import cookieParser from 'cookie-parser';
 import cookie from 'cookie';
+import dotenv from 'dotenv';
+import pool from './db.js';
 
+dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -14,17 +17,78 @@ app.use(cors());
 app.use(express.json());
 app.use('/', express.static('public'));
 
+
+function failed(res, status, message) {
+    res.status(status).json({status: 'failed', message: message});
+}
+
+async function executeSql(res, query, params = []) {
+    try {
+        if(params.length === 0) {
+            const [result] = await pool.execute(query);
+            return result; 
+        } else {
+            const [result] = await pool.execute(query, params);
+        return result;
+        }
+        
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({status: "failed", message: `Database Error: ${error}`});
+    }
+}
+
+async function getPlantId(res) {
+    const query = 'SELECT plant_id FROM plants';
+    return await executeSql(res, query)
+}
+
+async function getPlantData(res, plantId) {
+    const query = 'SELECT * FROM plants WHERE plant_id = ?';
+    const result = await executeSql(res, query, [plantId]);
+    return result[0];
+}
+
+async function getLogs(res) {
+    const query = 'SELECT * FROM logs';
+    return await executeSql(res, query);
+}
+
+app.get('/api/plantId', async(req, res) => {
+    res.status(200).json(await getPlantId(res));
+});
+
+app.get('/api/plantData/:plantId', async(req, res) => {
+    const plantId = req.params.plantId;
+    res.status(200).json(await getPlantData(res, plantId));
+});
+
+app.get('/api/logs', async(req, res) => {
+    res.status(200).json(await getLogs(res));
+    
+});
+
 io.on("connection", (socket) => {
     const cookies = cookie.parse(socket.handshake.headers.cookie);
     socket.username = cookies.username || "Unknown user";
-
     
-    socket.on('waterPlant', (data) => {
-        io.emit('createLog', {username: socket.username, timestamp: data.timestamp});
+    socket.on('waterPlant', async(data) => {
+        try {
+            io.emit('createLog', {
+                username: socket.username,
+                time: data.time,
+                timestamp: data.timestamp,
+                plantNickname : data.plantNickname,
+                amount: data.amount
+            });
+            await pool.execute("INSERT INTO logs (log_detail) VALUES (?)", [`${socket.username} watered ${data.plantNickname} - around ${data.amount}mL`]);
+        } catch (error) {
+            console.error(`Failed to insert log: ${error}`);
+        }     
     });
 });
 
-const PORT = 3007;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on port: ${PORT}`);
 });
