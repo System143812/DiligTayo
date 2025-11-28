@@ -5,12 +5,14 @@ const startBtn = document.getElementById('')
 const infoShowBtn = document.getElementById('plantDataToggleBtn');
 const infoContainer = document.getElementById('plantDataContainer');
 const promptOverlay = document.getElementById('usernamePromptOverlay');
+const usernameContainer = document.getElementById('usernameContainer');
 const usernameInput = document.getElementById('usernameInput');
 const usernameSubmitBtn = document.getElementById('usernameSubmitBtn');
 const logBody = document.getElementById('logBody');
 const logIcon = document.getElementById('logHeaderIcon');
 const logHeader = document.getElementById('logHeaderContainer');
-const currentPlant = document.getElementById('plantNickname').innerText;
+const plantNickname = document.getElementById('plantNickname');
+const roundNavContainer = document.getElementById('roundNavContainer');
 const plantImage = document.getElementById('plantImage');
 const usernamePromptContainer = document.getElementById('usernamePromptContainer');
 
@@ -25,6 +27,9 @@ function hideUserOverlay() { promptOverlay.classList.remove("show") }
 function showRequired(inputField) {
     inputField.classList.add('required');
 }
+
+let waterAmount = 12;
+
 const randomMsg = [
     'Successfully watered the plant!',
     '+10exp',
@@ -44,9 +49,16 @@ const randomMsg = [
     'Alam mo ah 😏'
 ];
 
+let currentPlantIndex = 2;
+let plantCollection = [];
+
 async function fetchGetData(url) {
     try {
-        const response = await fetch(url, { headers: {"Accept":"application/json"}});
+        const response = await fetch(url, {
+            headers: {
+                "Accept":"application/json"
+            }
+        });
         const data = await response.json();
         if(!data) return "error";
         return data;
@@ -56,16 +68,115 @@ async function fetchGetData(url) {
     }
 }
 
-async function initDashboard(socket) {
-    socket.on('createLog', (data) => {
+function getDateDuration(timestamp) {
+    const timeDiff = Date.now() - new Date(timestamp).getTime();
+    if(timeDiff < 86400000) return `Today`;  
+    if(timeDiff < 172800000) return `Yesterday`;
+    return `${Math.floor(timeDiff / 86400000)} days ago`;
+}
+
+function getTime(timestamp) {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
+}
+
+async function loadLogs() {  
+    const logs = await fetchGetData('/api/logs');
+    if(logs === 'error') return console.log('Network Connection Error');
+    if(logs.length === 0) {
+        const emptyLogPlaceholder = document.createElement('div');
+        emptyLogPlaceholder.id = 'emptyLogPlaceholder';
+        emptyLogPlaceholder.innerText = 'No recent activities yet'
+        return logBody.append(emptyLogPlaceholder);
+    }
+    for (const log of logs) {
         const logCards = document.createElement('div');
         logCards.classList.add('log-cards');
         const logMessage = document.createElement('div');
         logMessage.classList.add('log-message');
-        logMessage.innerText = `${data.username} waters ${currentPlant}`;
+        logMessage.innerText = log.log_detail;
         const logDate = document.createElement('div');
         logDate.classList.add('log-date');
-        logDate.innerText = `${data.timestamp} | Today`;
+        logDate.innerText = `${getTime(log.created_at)} | ${getDateDuration(log.created_at)}`;
+
+        logCards.append(logMessage, logDate);
+        logBody.prepend(logCards);
+    }
+}
+
+async function getPlants(currentIndex) {
+    plantCollection = [];
+    const plants = await fetchGetData('api/plantId');
+    if(plants === 'error') return console.log("Network Connection Error");//dapat popup module nalabas dito kaso katamad
+    if(plants.length === 0) return console.log("Theres no any plants yet.");//dapat placeholder ang nandito kaso katamad din
+    for (const plant of plants) {
+        plantCollection.push(plant.plant_id);
+    }
+    roundNavsCreate(currentIndex);
+}
+
+function updateNavIndex(currentIndex) {
+    const roundNavs = document.querySelectorAll('.round-nav');
+    let count = 0;
+    for (const roundNav of roundNavs) {
+        if(count === currentIndex) {
+            roundNav.classList.add('selected');
+        } else {
+            roundNav.classList.remove('selected');
+        }
+        count++;
+    }
+}
+
+function roundNavsCreate(currentIndex) {
+    roundNavContainer.innerHTML = '';
+    for (const plant of plantCollection) {
+        const roundNav = document.createElement('span');
+        roundNav.classList.add('round-nav');
+        roundNavContainer.append(roundNav);    
+    }
+    updateNavIndex(currentIndex);
+}
+
+
+async function loadPlantData(currentIndex) {
+    const currentPlant = plantCollection[currentIndex];
+    const plantData = await fetchGetData(`/api/plantData/${currentPlant}`);
+    if(plantData === 'error') return console.log("Network Connection Error");//dapat popup module nalabas dito kaso katamad
+    if(plantData.length === 0) return console.log("Theres no any plants yet.");//dapat placeholder ang nandito kaso katamad din
+    const headerMoisturePct = document.getElementById('moisturePercentage');
+    const dataMoisturePct = document.getElementById('soilProgressPercentage');
+    headerMoisturePct.innerText = `${plantData.soil_moisture}%`;
+    dataMoisturePct.innerText = `${plantData.soil_moisture}%`;
+    const headerHumidityPct = document.getElementById('humidityPercentage');
+    const dataHumidityPct = document.getElementById('humidityProgressPercentage');
+    headerHumidityPct.innerText = `${plantData.humidity}%`;
+    dataHumidityPct.innerText = `${plantData.humidity}%`;
+    plantNickname.innerText = plantData.nickname;
+    document.getElementById('scientificName').innerText = plantData.name;
+    document.getElementById('recentWaterStatus').innerText = `Last Watered | ${getTime(plantData.last_water)} ${getDateDuration(plantData.last_water)}`;
+    document.getElementById('plantStatus').innerText = 'Healthy';
+    document.getElementById('soilProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${plantData.soil_moisture}%, var(--light-gray) ${plantData.soil_moisture}%)`;
+    document.getElementById('humidityProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${plantData.humidity}%, var(--light-gray) ${plantData.humidity}%)`;
+    document.getElementById('plantImage').style.backgroundImage = `url('/assets/pictures/${plantData.image}')`;
+}
+
+async function initDashboard(socket) {
+    usernameContainer.innerText = Cookies.get("username");
+    await loadLogs();
+    await getPlants(currentPlantIndex);
+    await loadPlantData(currentPlantIndex);
+
+    socket.on('createLog', (data) => {
+        const emptyLogPlaceholder = document.getElementById('emptyLogPlaceholder')
+        if(emptyLogPlaceholder) emptyLogPlaceholder.remove();
+        const logCards = document.createElement('div');
+        logCards.classList.add('log-cards');
+        const logMessage = document.createElement('div');
+        logMessage.classList.add('log-message');
+        logMessage.innerText = `${data.username} watered ${data.plantNickname} - around ${data.amount}mL`;
+        const logDate = document.createElement('div');
+        logDate.classList.add('log-date');
+        logDate.innerText = `${data.time} | ${getDateDuration(data.timestamp)}`;
 
         logCards.append(logMessage, logDate);
         logBody.prepend(logCards);
@@ -75,7 +186,7 @@ async function initDashboard(socket) {
 }
 
 function popupNotif() {
-    const popupDiv = document.createElement('div');
+    const popupDiv = document.createElement('span');
     const randHeight = Math.floor(Math.random() * 50);
     const randWidth = Math.floor(Math.random() * 150);
     const randomMessage = randomMsg[Math.floor(Math.random() * randomMsg.length)];
@@ -97,7 +208,7 @@ async function initEventListeners(socket) {
             logBody.style.opacity = 0;
             setTimeout(() => {
                 logBody.classList.remove("show");
-            }, 550);
+            }, 150);
         } else {
             logBody.classList.add("show");  
             setTimeout(() => {
@@ -108,8 +219,9 @@ async function initEventListeners(socket) {
     });
 
     clickBtn.addEventListener("click", async() => {
-        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
-        socket.emit('waterPlant', {timestamp: timestamp});
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
+        const timestamp = new Date();
+        socket.emit('waterPlant', {time: time, timestamp: timestamp, plantNickname: plantNickname.innerText, amount: waterAmount});
         popupNotif();
     });
     infoShowBtn.addEventListener("click", () => {
@@ -147,7 +259,7 @@ async function initWebsocketUser() {
 
 
 window.onload = async() => {
-    // Cookies.remove("username"); //Pang force reset lang to
+    // Cookies.remove("username"); //Pang force reset lang to ng cookies
     if(!Cookies.get("username")) {
         showUserOverlay();
         await clickInitUser()
