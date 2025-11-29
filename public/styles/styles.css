@@ -429,12 +429,31 @@ body {
     z-index: 1;
 }
 
-.plant-status {
+#plantStatus {
     display: flex;
     padding: 0.25rem 0.5rem;
-    background-color: var(--light-green);
     color: var(--kape-bg);
     border-radius: 5px;   
+}
+
+#plantStatus.healthy {
+    background-color: var(--light-green);
+}
+
+#plantStatus.soaked {
+    background-color: rgb(16, 16, 107);
+}
+
+#plantStatus.wet {
+    background-color: rgb(71, 157, 186);
+}
+
+#plantStatus.dry {
+    background-color: rgb(115, 45, 45);
+}
+
+#plantStatus.critical {
+    background-color: rgb(163, 9, 9);
 }
 
 #gold {

@@ -48,8 +48,9 @@ const randomMsg = [
     'PLANT: Awit sayo sah',
     'Alam mo ah 😏'
 ];
-
-let currentPlantIndex = 2;
+let currentPlantId = 1;
+let currentPlantIndex = 1;
+let last_water_timestamp;
 let plantCollection = [];
 
 async function fetchGetData(url) {
@@ -70,13 +71,29 @@ async function fetchGetData(url) {
 
 function getDateDuration(timestamp) {
     const timeDiff = Date.now() - new Date(timestamp).getTime();
-    if(timeDiff < 86400000) return `Today`;  
-    if(timeDiff < 172800000) return `Yesterday`;
+    if(timeDiff < 120000) return 'just now';
+    if(timeDiff < 3600000) return `${Math.floor(timeDiff / 60000)} minutes ago`;
+    if(timeDiff < 7200000) return `an hour ago`;
+    if(timeDiff < 86400000) return `${Math.floor(timeDiff / 3600000)} hours ago`;  
+    if(timeDiff < 172800000) return `yesterday`;
     return `${Math.floor(timeDiff / 86400000)} days ago`;
 }
 
 function getTime(timestamp) {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
+}
+
+function getSqlTimestamp() {
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, "0");
+    const year = now.getFullYear();
+    const month = pad(now.getMonth() + 1);
+    const day = pad(now.getDate());
+    const hour = pad(now.getHours());
+    const min = pad(now.getMinutes());
+    const sec = pad(now.getSeconds());
+
+    return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
 }
 
 async function loadLogs() {  
@@ -137,27 +154,117 @@ function roundNavsCreate(currentIndex) {
     updateNavIndex(currentIndex);
 }
 
+function updateLastWater(timestamp) {
+    document.getElementById('recentWaterStatus').innerText = `Last Watered | ${getTime(timestamp)} | ${getDateDuration(timestamp)}`;
+}
+
+function updatePlantStatus(last_water, moisture, humidity) {
+    const plantStatus = document.getElementById('plantStatus');
+    const timeDiffMs = Date.now() - new Date(last_water).getTime();
+    const mins = Math.floor(timeDiffMs / 60000);
+    const hours = Math.floor(timeDiffMs / 3600000);
+
+    if(moisture > 85 || (moisture > 75 && mins > 5 )){
+        plantStatus.innerText = 'Soaked';
+        plantStatus.className = 'soaked';
+        return;
+    }
+
+    if (moisture >= 65 && moisture <= 80) {
+        plantStatus.innerText = 'Wet';
+        plantStatus.className = 'wet';
+        return;
+    }
+
+    if (moisture >= 35 && moisture < 65 && humidity >= 40 && humidity <= 70) {
+        plantStatus.innerText = 'Healthy';
+        plantStatus.className = 'healthy';
+        return;
+    }
+
+    if (moisture >= 15 && moisture < 35 || (humidity < 40 && humidity >= 25 )) {
+        plantStatus.innerText = 'Dry';
+        plantStatus.className = 'dry';
+        return;
+    }
+
+    if (moisture <= 14 || hours > 72 || humidity <  25 || humidity > 85) {
+        plantStatus.innerText = 'Critical';
+        plantStatus.className = 'critical';
+        return;
+    }
+
+    plantStatus.innerText = 'Healthy';
+    plantStatus.className = 'healthy';
+    return;
+}
+
+function updateProgressStatus(moisture, humidity) {
+    let soilStatus;
+    let humidityStatus;
+    if(moisture >= 0 && moisture < 10) {
+        soilStatus = 'Very Dry';
+    } 
+    if(moisture >= 10 && moisture < 25) {
+        soilStatus = 'Dry';
+    }
+    if(moisture >= 25 && moisture < 45) {
+        soilStatus = 'Slightly Moist';
+    }
+    if(moisture >= 45 && moisture < 65) {
+        soilStatus = 'Moist';
+    }
+    if(moisture >= 65 && moisture < 80) {
+        soilStatus = 'Wet';
+    }
+    if(moisture >= 80) {
+        soilStatus = 'Soaked';
+    }
+    if(humidity >= 0 && humidity < 20) {
+        humidityStatus = 'Very Low';
+    }
+    if(humidity >= 20 && humidity < 40) {
+        humidityStatus = 'Low';
+    }
+    if(humidity >= 40 && humidity < 60) {
+        humidityStatus = 'Moderate';
+    }
+    if(humidity >= 60 && humidity < 75) {
+        humidityStatus = 'Slightly High';
+    }
+    if(humidity >= 75 && humidity < 85) {
+        humidityStatus = 'High';
+    }
+    if(humidity >= 85) {
+        humidityStatus = 'Very High';
+    }
+    
+    document.getElementById('soilDataStatus').innerText = soilStatus;
+    document.getElementById('humidityDataStatus').innerText = humidityStatus;
+    document.getElementById('moisturePercentage').innerText = `${moisture}%`;
+    document.getElementById('soilProgressPercentage').innerText = `${moisture}%`;
+    document.getElementById('humidityPercentage').innerText = `${humidity}%`;
+    document.getElementById('humidityProgressPercentage').innerText = `${humidity}%`;
+    document.getElementById('soilProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${moisture}%, var(--light-gray) ${moisture}%)`;
+    document.getElementById('humidityProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${humidity}%, var(--light-gray) ${humidity}%)`;
+}
 
 async function loadPlantData(currentIndex) {
     const currentPlant = plantCollection[currentIndex];
     const plantData = await fetchGetData(`/api/plantData/${currentPlant}`);
     if(plantData === 'error') return console.log("Network Connection Error");//dapat popup module nalabas dito kaso katamad
     if(plantData.length === 0) return console.log("Theres no any plants yet.");//dapat placeholder ang nandito kaso katamad din
-    const headerMoisturePct = document.getElementById('moisturePercentage');
-    const dataMoisturePct = document.getElementById('soilProgressPercentage');
-    headerMoisturePct.innerText = `${plantData.soil_moisture}%`;
-    dataMoisturePct.innerText = `${plantData.soil_moisture}%`;
-    const headerHumidityPct = document.getElementById('humidityPercentage');
-    const dataHumidityPct = document.getElementById('humidityProgressPercentage');
-    headerHumidityPct.innerText = `${plantData.humidity}%`;
-    dataHumidityPct.innerText = `${plantData.humidity}%`;
+    currentPlantId = plantData.plant_id;
+    updateProgressStatus(plantData.soil_moisture, plantData.humidity);    
     plantNickname.innerText = plantData.nickname;
     document.getElementById('scientificName').innerText = plantData.name;
-    document.getElementById('recentWaterStatus').innerText = `Last Watered | ${getTime(plantData.last_water)} ${getDateDuration(plantData.last_water)}`;
-    document.getElementById('plantStatus').innerText = 'Healthy';
-    document.getElementById('soilProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${plantData.soil_moisture}%, var(--light-gray) ${plantData.soil_moisture}%)`;
-    document.getElementById('humidityProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${plantData.humidity}%, var(--light-gray) ${plantData.humidity}%)`;
-    document.getElementById('plantImage').style.backgroundImage = `url('/assets/pictures/${plantData.image}')`;
+    updateLastWater(plantData.last_water);
+    last_water_timestamp = plantData.last_water;
+    updatePlantStatus(plantData.last_water, plantData.soil_moisture, plantData.humidity);
+    
+    const plantImage = document.getElementById('plantImage')
+    plantImage.style.backgroundImage = `url('/assets/pictures/${plantData.image}')`;
+    plantData.no_bg ? plantImage.style.backgroundSize = 'contain' : plantImage.style.backgroundSize = 'cover';
 }
 
 async function initDashboard(socket) {
@@ -165,7 +272,11 @@ async function initDashboard(socket) {
     await loadLogs();
     await getPlants(currentPlantIndex);
     await loadPlantData(currentPlantIndex);
-
+    socket.on('updateLastWater', (data) => {
+        if(data.plantId === currentPlantId){
+            updateLastWater(data.timestamp);
+        }
+    });
     socket.on('createLog', (data) => {
         const emptyLogPlaceholder = document.getElementById('emptyLogPlaceholder')
         if(emptyLogPlaceholder) emptyLogPlaceholder.remove();
@@ -220,8 +331,10 @@ async function initEventListeners(socket) {
 
     clickBtn.addEventListener("click", async() => {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
-        const timestamp = new Date();
-        socket.emit('waterPlant', {time: time, timestamp: timestamp, plantNickname: plantNickname.innerText, amount: waterAmount});
+        const timestamp = getSqlTimestamp();
+        socket.emit('waterPlant', {plantId: currentPlantId, time: time, timestamp: timestamp, plantNickname: plantNickname.innerText, amount: waterAmount});
+        updateLastWater(timestamp);
+        last_water_timestamp = timestamp;
         popupNotif();
     });
     infoShowBtn.addEventListener("click", () => {
@@ -256,6 +369,11 @@ async function initWebsocketUser() {
         socket.emit('getUsername');
         await initDashboard(socket);    
 } 
+
+setInterval(() => {
+    loadLogs();
+    updateLastWater(last_water_timestamp);
+}, 60000);
 
 
 window.onload = async() => {
