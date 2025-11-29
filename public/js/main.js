@@ -1,7 +1,8 @@
 
 const loader = document.getElementById('loadingOverlay');
 const clickBtn = document.getElementById('clickMeBtn');
-const startBtn = document.getElementById('')
+const previousBtn = document.getElementById('previousBtn');
+const nextBtn = document.getElementById('nextBtn');
 const infoShowBtn = document.getElementById('plantDataToggleBtn');
 const infoContainer = document.getElementById('plantDataContainer');
 const promptOverlay = document.getElementById('usernamePromptOverlay');
@@ -13,9 +14,10 @@ const logIcon = document.getElementById('logHeaderIcon');
 const logHeader = document.getElementById('logHeaderContainer');
 const plantNickname = document.getElementById('plantNickname');
 const roundNavContainer = document.getElementById('roundNavContainer');
-const plantImage = document.getElementById('plantImage');
+const plantImageContainer = document.getElementById('plantImageContainer');
+// const plantImage = document.getElementById('plantImage');
 const usernamePromptContainer = document.getElementById('usernamePromptContainer');
-
+let currentImageDiv;
 let socket;
 
 function showLoader() { loader.style.opacity = 1 }
@@ -27,8 +29,6 @@ function hideUserOverlay() { promptOverlay.classList.remove("show") }
 function showRequired(inputField) {
     inputField.classList.add('required');
 }
-
-let waterAmount = 12;
 
 const randomMsg = [
     'Successfully watered the plant!',
@@ -48,8 +48,12 @@ const randomMsg = [
     'PLANT: Awit sayo sah',
     'Alam mo ah 😏'
 ];
+
+let waterAmount = 12;
 let currentPlantId = 1;
-let currentPlantIndex = 1;
+let currentPlantIndex = 0;
+let currentImage;
+let nextImage;
 let last_water_timestamp;
 let plantCollection = [];
 
@@ -154,6 +158,7 @@ function roundNavsCreate(currentIndex) {
     updateNavIndex(currentIndex);
 }
 
+
 function updateLastWater(timestamp) {
     document.getElementById('recentWaterStatus').innerText = `Last Watered | ${getTime(timestamp)} | ${getDateDuration(timestamp)}`;
 }
@@ -249,6 +254,45 @@ function updateProgressStatus(moisture, humidity) {
     document.getElementById('humidityProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${humidity}%, var(--light-gray) ${humidity}%)`;
 }
 
+function setImage() {
+    currentImage = nextImage;
+    const plantImage = document.createElement('div');
+    plantImage.id = 'plantImage';
+    plantImage.classList.add('plant-image');
+    plantImage.style.backgroundImage = `url('/assets/pictures/${currentImage.image}')`;
+    currentImage.no_bg ? plantImage.style.backgroundSize = 'contain' : plantImage.style.backgroundSize = 'cover';
+    plantImageContainer.append(plantImage);
+    currentImageDiv = plantImage;
+}  
+
+
+
+function insertNewImage(direction) {
+   
+    const newImage = document.createElement('div');
+    newImage.id = 'plantImage';
+    newImage.classList.add('plant-image');
+    newImage.style.backgroundImage = `url('/assets/pictures/${nextImage.image}')`;
+    nextImage.no_bg ? newImage.style.backgroundSize = 'contain' : newImage.style.backgroundSize = 'cover';
+    console.log(currentImageDiv);
+    if(direction === 'next'){
+        newImage.classList.add('insert-left');
+        currentImageDiv.classList.add('move-left');
+    } else {
+        newImage.classList.add('insert-right');
+        currentImageDiv.classList.add('move-right');
+    }
+    plantImageContainer.append(newImage);
+    currentImageDiv.addEventListener("animationend", () => {
+        currentImageDiv.remove();
+        currentImageDiv = newImage;
+        currentImageDiv.classList.remove('insert-right');
+        currentImageDiv.classList.remove('insert-left');
+    }, { once: true })
+    console.log(currentImageDiv);
+    currentImage = nextImage;
+}
+
 async function loadPlantData(currentIndex) {
     const currentPlant = plantCollection[currentIndex];
     const plantData = await fetchGetData(`/api/plantData/${currentPlant}`);
@@ -261,10 +305,7 @@ async function loadPlantData(currentIndex) {
     updateLastWater(plantData.last_water);
     last_water_timestamp = plantData.last_water;
     updatePlantStatus(plantData.last_water, plantData.soil_moisture, plantData.humidity);
-    
-    const plantImage = document.getElementById('plantImage')
-    plantImage.style.backgroundImage = `url('/assets/pictures/${plantData.image}')`;
-    plantData.no_bg ? plantImage.style.backgroundSize = 'contain' : plantImage.style.backgroundSize = 'cover';
+    nextImage = {image: plantData.image, no_bg: plantData.no_bg};
 }
 
 async function initDashboard(socket) {
@@ -272,6 +313,7 @@ async function initDashboard(socket) {
     await loadLogs();
     await getPlants(currentPlantIndex);
     await loadPlantData(currentPlantIndex);
+    setImage(currentImage);
     socket.on('updateLastWater', (data) => {
         if(data.plantId === currentPlantId){
             updateLastWater(data.timestamp);
@@ -309,7 +351,7 @@ function popupNotif() {
     setTimeout(() => {
         popupDiv.style.display = 'none';
     }, 4000);
-    plantImage.append(popupDiv);
+    plantImageContainer.append(popupDiv);
 }
 
 async function initEventListeners(socket) {
@@ -337,6 +379,23 @@ async function initEventListeners(socket) {
         last_water_timestamp = timestamp;
         popupNotif();
     });
+
+    previousBtn.addEventListener("click", async() => {
+        currentPlantIndex = currentPlantIndex === 0 ? plantCollection.length - 1 : currentPlantIndex - 1;
+        await loadPlantData(currentPlantIndex);
+        updateNavIndex(currentPlantIndex);
+        insertNewImage('prev');
+        
+    });
+
+    nextBtn.addEventListener("click", async() => {
+        currentPlantIndex = currentPlantIndex === plantCollection.length - 1 ? 0 : currentPlantIndex + 1;
+        await loadPlantData(currentPlantIndex);
+        updateNavIndex(currentPlantIndex);
+        insertNewImage('next');
+        
+    });
+
     infoShowBtn.addEventListener("click", () => {
         if(infoShowBtn.classList.contains("show")){
             infoShowBtn.classList.remove("show");
