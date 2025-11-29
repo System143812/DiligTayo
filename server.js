@@ -68,12 +68,21 @@ app.get('/api/logs', async(req, res) => {
     
 });
 
+
 io.on("connection", (socket) => {
     const cookies = cookie.parse(socket.handshake.headers.cookie);
     socket.username = cookies.username || "Unknown user";
     
     socket.on('waterPlant', async(data) => {
         try {
+            io.emit('triggerWaterPump', { //eto yung mag ttrigger sa pump ng esp32
+                plantId: data.plantId,
+                amount: data.amount
+            });
+            io.emit('updateLastWater', {
+                plantId: data.plantId,
+                timestamp: data.timestamp
+            })
             io.emit('createLog', {
                 username: socket.username,
                 time: data.time,
@@ -81,6 +90,7 @@ io.on("connection", (socket) => {
                 plantNickname : data.plantNickname,
                 amount: data.amount
             });
+            await pool.execute("UPDATE plants SET last_water = ? WHERE plant_id = ?", [data.timestamp, data.plantId]);
             await pool.execute("INSERT INTO logs (log_detail) VALUES (?)", [`${socket.username} watered ${data.plantNickname} - around ${data.amount}mL`]);
         } catch (error) {
             console.error(`Failed to insert log: ${error}`);
