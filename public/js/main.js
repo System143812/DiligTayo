@@ -1,4 +1,3 @@
-
 const loader = document.getElementById('loadingOverlay');
 const clickBtn = document.getElementById('clickMeBtn');
 const previousBtn = document.getElementById('previousBtn');
@@ -9,6 +8,16 @@ const promptOverlay = document.getElementById('usernamePromptOverlay');
 const usernameContainer = document.getElementById('usernameContainer');
 const usernameInput = document.getElementById('usernameInput');
 const usernameSubmitBtn = document.getElementById('usernameSubmitBtn');
+const autoWaterToggle = document.getElementById('autoWaterCheckbox');
+const autoSettingsBtn = document.getElementById('autoSettings');
+const autoConfigContainer = document.getElementById('autoConfigContainer');
+const configInputs = document.querySelectorAll('.config-inputs');
+const configBoxes =  document.querySelectorAll('.config-container');
+const minMoistInput = document.getElementById('minMoisture');
+const maxMoistInput = document.getElementById('maxMoisture');
+const saveConfigBtn = document.getElementById('saveConfigBtn')
+const outerContainer = document.getElementById('outerContainer');
+const bodyContainer = document.getElementById('bodyContainer');
 const logBody = document.getElementById('logBody');
 const logIcon = document.getElementById('logHeaderIcon');
 const logHeader = document.getElementById('logHeaderContainer');
@@ -49,13 +58,26 @@ const randomMsg = [
     'Alam mo ah 😏'
 ];
 
-let waterAmount = 12;
-let currentPlantId = 1;
+const randomEmoji = ['🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🌱', '🌲', '☘', '🌳', '🌺'];
+
+let waterAmount = 12; 
 let currentPlantIndex = 0;
 let currentImage;
 let nextImage;
+let min_moisture = 20;
+let max_moisture = 70;
 let last_water_timestamp;
 let plantCollection = [];
+
+function getAutoConfig() {
+    const autoWaterConfig = { //eto yung default config ng autoWater
+        username: Cookies.get("username"),
+        targets: plantCollection[currentPlantIndex],
+        min_moisture: min_moisture,
+        max_moisture: max_moisture
+    }
+    return autoWaterConfig;
+}
 
 async function fetchGetData(url) {
     try {
@@ -73,6 +95,26 @@ async function fetchGetData(url) {
     }
 }
 
+async function fetchPostData(url, form) {
+    try {
+        const formData = new FormData(form);
+        const jsonData = Object.fromEntries(formData.entries());
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type":"application/json"
+            },
+            body: JSON.stringify(jsonData)
+        });
+        const data = await res.json();
+        if(!data) return "error";
+        if(data.status === 200) return "success";
+    } catch (error) {
+        console.log(`Error occured: ${error}`);
+        return "error";
+    }
+}
+
 function getDateDuration(timestamp) {
     const timeDiff = Date.now() - new Date(timestamp).getTime();
     if(timeDiff < 120000) return 'just now';
@@ -83,8 +125,9 @@ function getDateDuration(timestamp) {
     return `${Math.floor(timeDiff / 86400000)} days ago`;
 }
 
-function getTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
+function getTime(timestamp = null) {
+    const date = timestamp ?  new Date(timestamp) : new Date();
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
 }
 
 function getSqlTimestamp() {
@@ -109,6 +152,7 @@ async function loadLogs() {
         emptyLogPlaceholder.innerText = 'No recent activities yet'
         return logBody.append(emptyLogPlaceholder);
     }
+    logBody.innerHTML = '';
     for (const log of logs) {
         const logCards = document.createElement('div');
         logCards.classList.add('log-cards');
@@ -254,6 +298,16 @@ function updateProgressStatus(moisture, humidity) {
     document.getElementById('humidityProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${humidity}%, var(--light-gray) ${humidity}%)`;
 }
 
+function activateAutoWater(socket) {
+    const autoWaterConfig = getAutoConfig();
+    socket.emit('activateAuto', { autoWaterConfig }); 
+}
+
+function deactivateAutoWater(socket) {
+    const autoWaterConfig = getAutoConfig();
+    socket.emit('deactivateAuto', { autoWaterConfig });
+}
+
 function setImage() {
     currentImage = nextImage;
     const plantImage = document.createElement('div');
@@ -265,16 +319,12 @@ function setImage() {
     currentImageDiv = plantImage;
 }  
 
-
-
 function insertNewImage(direction) {
-   
     const newImage = document.createElement('div');
     newImage.id = 'plantImage';
     newImage.classList.add('plant-image');
     newImage.style.backgroundImage = `url('/assets/pictures/${nextImage.image}')`;
     nextImage.no_bg ? newImage.style.backgroundSize = 'contain' : newImage.style.backgroundSize = 'cover';
-    console.log(currentImageDiv);
     if(direction === 'next'){
         newImage.classList.add('insert-left');
         currentImageDiv.classList.add('move-left');
@@ -289,22 +339,34 @@ function insertNewImage(direction) {
         currentImageDiv.classList.remove('insert-right');
         currentImageDiv.classList.remove('insert-left');
     }, { once: true })
-    console.log(currentImageDiv);
     currentImage = nextImage;
 }
 
+function automatePlant() {
+    autoWaterToggle.checked = true;
+    clickBtn.classList.add('auto-mode');
+    clickBtn.innerText = 'Auto Mode';
+}
+
+function deautomatePlant() {
+    autoWaterToggle.checked = false;
+    clickBtn.classList.remove('auto-mode');
+    clickBtn.innerText = 'Water Plant';
+}
+
 async function loadPlantData(currentIndex) {
-    const currentPlant = plantCollection[currentIndex];
-    const plantData = await fetchGetData(`/api/plantData/${currentPlant}`);
+    const plantData = await fetchGetData(`/api/plantData/${plantCollection[currentIndex]}`);
     if(plantData === 'error') return console.log("Network Connection Error");//dapat popup module nalabas dito kaso katamad
     if(plantData.length === 0) return console.log("Theres no any plants yet.");//dapat placeholder ang nandito kaso katamad din
-    currentPlantId = plantData.plant_id;
     updateProgressStatus(plantData.soil_moisture, plantData.humidity);    
     plantNickname.innerText = plantData.nickname;
     document.getElementById('scientificName').innerText = plantData.name;
     updateLastWater(plantData.last_water);
+    minMoistInput.value = plantData.min_moisture;
+    maxMoistInput.value = plantData.max_moisture;
     last_water_timestamp = plantData.last_water;
     updatePlantStatus(plantData.last_water, plantData.soil_moisture, plantData.humidity);
+    plantData.auto ? automatePlant() : deautomatePlant();
     nextImage = {image: plantData.image, no_bg: plantData.no_bg};
 }
 
@@ -314,10 +376,25 @@ async function initDashboard(socket) {
     await getPlants(currentPlantIndex);
     await loadPlantData(currentPlantIndex);
     setImage(currentImage);
+
+    socket.on('automate', (data) => {
+        if(data.autoWaterConfig.targets === plantCollection[currentPlantIndex]) {
+            automatePlant();
+        }
+    })
+    socket.on('deautomate', (data) => {
+        if(data.autoWaterConfig.targets === plantCollection[currentPlantIndex]) {
+            deautomatePlant();
+        }
+    });
     socket.on('updateLastWater', (data) => {
-        if(data.plantId === currentPlantId){
+        if(data.plantId === plantCollection[currentPlantIndex]){
             updateLastWater(data.timestamp);
         }
+    });
+    socket.on('screenBubble', (data) => {
+        const message = `${data.username} watered ${data.plantNickname} - around ${data.amount}mL`;
+        popupBubble(message);
     });
     socket.on('createLog', (data) => {
         const emptyLogPlaceholder = document.getElementById('emptyLogPlaceholder')
@@ -354,7 +431,25 @@ function popupNotif() {
     plantImageContainer.append(popupDiv);
 }
 
+function popupBubble(message) {
+    const bubbleDiv = document.createElement('div');
+    const randHeight = Math.floor(Math.random() * 150) + 50;
+    bubbleDiv.classList.add('popup-bubbles');
+    bubbleDiv.style.top = `${randHeight}px`;
+    bubbleDiv.innerText = `${randomEmoji[Math.floor(Math.random() * randomEmoji.length)]} ${message}`;
+    bubbleDiv.classList.add('animate-bubble');
+    bubbleDiv.addEventListener('animationend', () => {
+        bubbleDiv.remove();
+    }, { once: true });
+    bodyContainer.append(bubbleDiv);
+}
+
+function showConfigSetting(socket) {
+                                                               
+}
+
 async function initEventListeners(socket) {
+    let configFormValidity; 
     logHeader.addEventListener("click", () => {
         if(logIcon.classList.contains("show")) {
             logIcon.classList.remove("show");
@@ -372,9 +467,14 @@ async function initEventListeners(socket) {
     });
 
     clickBtn.addEventListener("click", async() => {
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
         const timestamp = getSqlTimestamp();
-        socket.emit('waterPlant', {plantId: currentPlantId, time: time, timestamp: timestamp, plantNickname: plantNickname.innerText, amount: waterAmount});
+        socket.emit('waterPlant', {
+            plantId: plantCollection[currentPlantIndex],
+            time: getTime(),
+            timestamp: timestamp,
+            plantNickname: plantNickname.innerText,
+            amount: waterAmount
+        });
         updateLastWater(timestamp);
         last_water_timestamp = timestamp;
         popupNotif();
@@ -395,6 +495,91 @@ async function initEventListeners(socket) {
         insertNewImage('next');
         
     });
+
+    autoWaterToggle.addEventListener("change", () => {
+        if(autoWaterToggle.checked) return activateAutoWater(socket);
+        deactivateAutoWater(socket);
+    });
+
+    function showElement(div) {
+        div.style.display = 'flex';
+        setTimeout(() => { div.classList.add('show') }, 50);
+    }
+
+    function hideElement(div) {
+        div.classList.remove('show');
+        setTimeout(() => { div.style.display = 'none' }, 150);
+    }
+
+    function errorConfigInput(message, targetDiv) {
+        for (const container of configBoxes) {
+            if(container.contains(targetDiv)) {
+                const inputBox = container.querySelector('input');
+                const errorMessage = container.querySelector('.invalid-input');
+                errorMessage.innerText = message;
+                inputBox.classList.add('invalid');
+                errorMessage.classList.add('error');    
+            }
+        }
+        configFormValidity = false;
+    }
+
+    function validConfigInput(targetDiv) {
+        for (const container of configBoxes) {
+            if(container.contains(targetDiv)) {
+                container.querySelector('input').classList.remove('invalid');
+                container.querySelector('.invalid-input').classList.remove('error');
+                if(targetDiv === minMoistInput) {
+                    container.querySelector('.invalid-input').innerText = "*Minimum 0%";
+                } else {
+                    container.querySelector('.invalid-input').innerText = "*Maximum 100%";
+                }
+            }
+        }
+    }
+
+    autoSettingsBtn.addEventListener('click', () => {
+        autoConfigContainer.classList.contains('show') ? hideElement(autoConfigContainer) : showElement(autoConfigContainer);
+        showConfigSetting(socket);
+    });
+
+    outerContainer.addEventListener("click", (e) => {
+        if(!autoConfigContainer.contains(e.target) && e.target !== autoSettingsBtn) hideElement(autoConfigContainer);
+    });
+
+    
+    for (const configInput of configInputs) {
+        configInput.addEventListener('keydown', (e) => {
+            if(e.key === "-" || e.key === "e") e.preventDefault();
+        });
+        configInput.addEventListener("input", () => {
+            showElement(saveConfigBtn);
+            const value = Number(configInput.value);
+            const minValue = Number(minMoistInput.value);
+            const maxValue = Number(maxMoistInput.value);
+
+            if(value < 0 || configInput.value === "" || configInput.value === "-") errorConfigInput("Value below 0 is not valid", configInput);
+            if(value > 100) { 
+                errorConfigInput("Value cannot exceed above 100%", configInput);
+            } else if(maxValue < minValue) {
+                errorConfigInput("Value must not lower than minimum moisture", maxMoistInput);
+                errorConfigInput("Value must not higher than maximum moisture", minMoistInput);
+            } else if((maxValue > minValue) && (minValue >= 0 && minValue <= 100) && (maxValue >= 0 && maxValue <= 100)) {
+                for (const config of configInputs) {
+                    validConfigInput(config);
+                }
+                configFormValidity = true;
+            }
+        });
+    }
+    
+    autoConfigContainer.addEventListener("submit", async(e) => {
+        e.preventDefault()
+        if(!configFormValidity) return;
+        const response = await fetchPostData(`/api/saveAutoConfig/${plantCollection[currentPlantIndex]}`, autoConfigContainer);
+        if(response === "error") return console.error('Network Connection Error');
+        hideElement(saveConfigBtn);
+    })
 
     infoShowBtn.addEventListener("click", () => {
         if(infoShowBtn.classList.contains("show")){

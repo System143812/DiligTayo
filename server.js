@@ -29,7 +29,7 @@ async function executeSql(res, query, params = []) {
             return result; 
         } else {
             const [result] = await pool.execute(query, params);
-        return result;
+            return result;
         }
         
     } catch (error) {
@@ -54,6 +54,13 @@ async function getLogs(res) {
     return await executeSql(res, query);
 }
 
+async function saveAutoConfig(body, res, plantId) {
+    const query = "UPDATE plants SET min_moisture = ?, max_moisture = ? WHERE plant_id = ?";
+    const result = await executeSql(res, query, [body.min_moisture, body.max_moisture, plantId])
+    if(result.affectedRows > 0) return 'success';
+    return 'error';
+}
+
 app.get('/api/plantId', async(req, res) => {
     res.status(200).json(await getPlantId(res));
 });
@@ -67,6 +74,12 @@ app.get('/api/logs', async(req, res) => {
     res.status(200).json(await getLogs(res));
     
 });
+
+app.post('/api/saveAutoConfig/:plantId', async(req, res) => {
+    await saveAutoConfig(req.body, res, req.params.plantId) === 'success' ? 
+    res.status(200).json({message: 'success'}) :
+    res.status(500).json({message: 'database error'});
+})
 
 
 io.on("connection", (socket) => {
@@ -83,6 +96,11 @@ io.on("connection", (socket) => {
                 plantId: data.plantId,
                 timestamp: data.timestamp
             })
+            io.emit('screenBubble', {
+                username: socket.username,
+                plantNickname: data.plantNickname,
+                amount: data.amount
+            });
             io.emit('createLog', {
                 username: socket.username,
                 time: data.time,
@@ -96,6 +114,26 @@ io.on("connection", (socket) => {
             console.error(`Failed to insert log: ${error}`);
         }     
     });
+
+    socket.on('activateAuto', async(data) => {
+        try {
+            await pool.execute("UPDATE plants SET auto = 1 WHERE plant_id = ?", [data.autoWaterConfig.targets]);
+            io.emit('automate', { autoWaterConfig: data.autoWaterConfig });
+
+        } catch (error) {
+            console.error(`Failed to automate the current plant: ${error}`);
+        }
+    });
+
+    socket.on('deactivateAuto', async(data) => {
+        try {
+            await pool.execute("UPDATE plants SET auto = 0 WHERE plant_id = ?", [data.autoWaterConfig.targets]);
+            io.emit('deautomate', { autoWaterConfig: data.autoWaterConfig});
+        } catch (error) {
+            console.error(`Failed to de-automate the current plant: ${error}`);
+        }
+    });
+
 });
 
 const PORT = process.env.PORT || 3000;

@@ -78,6 +78,24 @@
                 </div>
             </div>
             <div id="plantDataToggleBtn"></div>
+            <div id="autoWaterMode">
+                <form id="autoConfigContainer">
+                    <div class="config-container">
+                        <label for="minMoisture" class="config-label">Minimum Soil Moisture</label>
+                        <input type="number" min="0" name="min_moisture" id="minMoisture" class="config-inputs">
+                        <span class="invalid-input">*Minimum 0%</span>
+                    </div>
+                    <div class="config-container">
+                        <label for="maxMoisture" class="config-label">Maximum Soil Moisture</label>
+                        <input type="number" name="max_moisture" min="0" id="maxMoisture" class="config-inputs">
+                        <span class="invalid-input">*Maximum 100%</span>
+                    </div>
+                    <button type="submit" id="saveConfigBtn">Save Changes</button>
+                </form>
+                <span id="autoSettings" class="icons"></span>
+                <label for="autoWaterCheckbox">Auto Water</label>
+                <input type="checkbox" name="auto-water" id="autoWaterCheckbox">
+            </div>
         </div>
     </div>
 </body>
