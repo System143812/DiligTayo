@@ -627,8 +627,8 @@ async function initEventListeners(socket) {
         }
     });
 }
-
 async function clickInitUser() {
+    const isProduction = window.location.protocol === 'https:';
     usernameSubmitBtn.addEventListener('click', async() => {
         if(usernameInput.value === "") return showRequired(usernameInput);
         usernameInput.classList.remove('required');
@@ -636,17 +636,16 @@ async function clickInitUser() {
         Cookies.set("username",  username, {
             expires : 1,
             path : "/",
-            sameSite: "lax",
-            secure: true
+            sameSite: isProduction ? "none" : "lax",
+            secure: isProduction
         });
-        initWebsocketUser();
+        await initWebsocketUser();
         hideUserOverlay();
     });
 }
 
 async function initWebsocketUser() {
         socket = io();
-        socket.emit('getUsername');
         await initDashboard(socket);    
 } 
 
@@ -660,7 +659,7 @@ window.onload = async() => {
     // Cookies.remove("username"); //Pang force reset lang to ng cookies
     if(!Cookies.get("username")) {
         showUserOverlay();
-        await clickInitUser()
+        await clickInitUser();
     } else {
         hideUserOverlay();
         await initWebsocketUser();
