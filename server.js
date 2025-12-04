@@ -81,9 +81,9 @@ app.post('/api/saveAutoConfig/:plantId', async(req, res) => {
     res.status(500).json({message: 'database error'});
 })
 
-
 io.on("connection", (socket) => {
-    const cookies = cookie.parse(socket.handshake.headers.cookie);
+    let cookies = {};
+    if (socket.handshake.headers.cookie) cookies = cookie.parse(socket.handshake.headers.cookie);
     socket.username = cookies.username || "Unknown user";
     
     socket.on('waterPlant', async(data) => {
@@ -133,7 +133,10 @@ io.on("connection", (socket) => {
             console.error(`Failed to de-automate the current plant: ${error}`);
         }
     });
-
+    
+    socket.on('saveAutoConfig', (data) => { 
+        io.emit('updateAutoConfig', { autoWaterConfig: data.autoWaterConfig});
+    });
 });
 
 const PORT = process.env.PORT || 3000;

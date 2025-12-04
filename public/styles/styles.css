@@ -181,6 +181,81 @@ body {
     z-index: 0;
 }
 
+#overwaterAlertOverlay {
+    display: none;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    padding: 2rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: var(--overlay-bg);
+    z-index: 20;
+    transition: all 0.15s ease;
+}
+
+#overwaterAlertOverlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#overwaterAlertContainer {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 2rem;
+    max-width: 500px;
+    gap: 1rem;
+    background-color: var(--kape-bg2);
+    border-radius: 10px;
+}
+
+#overwaterAlertHeader {
+    display: flex;
+    gap: 1rem;
+}
+
+#warningIcon {
+    display: flex;
+    height: 25px;
+    width: 25px;
+    background-image: url('/assets/icons/exclamation-black.png');
+}
+
+#overwaterAlertHeader span {
+    color: var(--green-dark);
+    font-weight: 600;
+    font-size: 16px;
+    padding-bottom: 0.5rem;
+}
+
+#overwaterAlertFooter {
+    display: flex;
+    gap: 1rem;
+}
+
+#stillWaterBtn, #cancelBtn {
+    border-radius: 5px;
+    padding: 0.75rem;
+    border: none;
+    background-color: var(--grayed-no-opacity);
+    transition: all 0.15s ease;
+}
+
+#stillWaterBtn:hover, #cancelBtn:hover {
+    background-color: var(--grayed-low-opacity);
+}
+
+#stillWaterBtn {
+    color: var(--red-border);
+    margin-left: auto;
+}
+
+#cancelBtn {
+    color: var(--green-dark);
+}
+
 #headerContainer {
     display: flex;
     align-items: center;

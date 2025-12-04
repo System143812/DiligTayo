@@ -2,6 +2,9 @@ const loader = document.getElementById('loadingOverlay');
 const clickBtn = document.getElementById('clickMeBtn');
 const previousBtn = document.getElementById('previousBtn');
 const nextBtn = document.getElementById('nextBtn');
+const overwaterOverlay = document.getElementById('overwaterAlertOverlay');
+const stillWaterBtn = document.getElementById('stillWaterBtn');
+const cancelBtn =  document.getElementById('cancelBtn');
 const infoShowBtn = document.getElementById('plantDataToggleBtn');
 const infoContainer = document.getElementById('plantDataContainer');
 const promptOverlay = document.getElementById('usernamePromptOverlay');
@@ -64,8 +67,7 @@ let waterAmount = 12;
 let currentPlantIndex = 0;
 let currentImage;
 let nextImage;
-let min_moisture = 20;
-let max_moisture = 70;
+let current_moisture;
 let last_water_timestamp;
 let plantCollection = [];
 
@@ -73,10 +75,19 @@ function getAutoConfig() {
     const autoWaterConfig = { //eto yung default config ng autoWater
         username: Cookies.get("username"),
         targets: plantCollection[currentPlantIndex],
-        min_moisture: min_moisture,
-        max_moisture: max_moisture
+        min_moisture: Number(minMoistInput.value),
+        max_moisture: Number(maxMoistInput.value)
     }
     return autoWaterConfig;
+}
+
+function getMoisture() {
+    const moistureStatus = {
+        min_moisture: Number(minMoistInput.value),
+        max_moisture: Number(maxMoistInput.value),
+        current_moisture: current_moisture
+    }
+    return moistureStatus;
 }
 
 async function fetchGetData(url) {
@@ -358,7 +369,8 @@ async function loadPlantData(currentIndex) {
     const plantData = await fetchGetData(`/api/plantData/${plantCollection[currentIndex]}`);
     if(plantData === 'error') return console.log("Network Connection Error");//dapat popup module nalabas dito kaso katamad
     if(plantData.length === 0) return console.log("Theres no any plants yet.");//dapat placeholder ang nandito kaso katamad din
-    updateProgressStatus(plantData.soil_moisture, plantData.humidity);    
+    updateProgressStatus(plantData.soil_moisture, plantData.humidity);   
+    current_moisture = plantData.soil_moisture; 
     plantNickname.innerText = plantData.nickname;
     document.getElementById('scientificName').innerText = plantData.name;
     updateLastWater(plantData.last_water);
@@ -386,6 +398,16 @@ async function initDashboard(socket) {
         if(data.autoWaterConfig.targets === plantCollection[currentPlantIndex]) {
             deautomatePlant();
         }
+    }); 
+    socket.on('updateAutoConfig', (data) => {
+        if(data.autoWaterConfig.targets === plantCollection[currentPlantIndex]) {
+            minMoistInput.value = data.autoWaterConfig.min_moisture;
+            maxMoistInput.value = data.autoWaterConfig.max_moisture;
+        }
+    });
+    socket.on('updateStatusPct', (data) => { //need gawin to// eto ung manggagaling sa esp32 na response
+        updateProgressStatus();
+        updatePlantStatus();
     });
     socket.on('updateLastWater', (data) => {
         if(data.plantId === plantCollection[currentPlantIndex]){
@@ -444,10 +466,6 @@ function popupBubble(message) {
     bodyContainer.append(bubbleDiv);
 }
 
-function showConfigSetting(socket) {
-                                                               
-}
-
 async function initEventListeners(socket) {
     let configFormValidity; 
     logHeader.addEventListener("click", () => {
@@ -466,7 +484,7 @@ async function initEventListeners(socket) {
         }
     });
 
-    clickBtn.addEventListener("click", async() => {
+    function waterPlantEvent() {
         const timestamp = getSqlTimestamp();
         socket.emit('waterPlant', {
             plantId: plantCollection[currentPlantIndex],
@@ -478,6 +496,23 @@ async function initEventListeners(socket) {
         updateLastWater(timestamp);
         last_water_timestamp = timestamp;
         popupNotif();
+    }
+
+    clickBtn.addEventListener("click", () => {
+        const current_moist = getMoisture().current_moisture;
+        const max_moist = getMoisture().max_moisture;
+        console.log(`current moist: ${current_moist} | max moist: ${max_moist}`);
+        if(current_moist >= max_moist) return showElement(overwaterOverlay);
+        waterPlantEvent();
+    });
+
+    stillWaterBtn.addEventListener("click", () => {
+        waterPlantEvent();
+        hideElement(overwaterOverlay);
+    });
+
+    cancelBtn.addEventListener("click", () => {
+        hideElement(overwaterOverlay);
     });
 
     previousBtn.addEventListener("click", async() => {
@@ -540,7 +575,6 @@ async function initEventListeners(socket) {
 
     autoSettingsBtn.addEventListener('click', () => {
         autoConfigContainer.classList.contains('show') ? hideElement(autoConfigContainer) : showElement(autoConfigContainer);
-        showConfigSetting(socket);
     });
 
     outerContainer.addEventListener("click", (e) => {
@@ -578,6 +612,8 @@ async function initEventListeners(socket) {
         if(!configFormValidity) return;
         const response = await fetchPostData(`/api/saveAutoConfig/${plantCollection[currentPlantIndex]}`, autoConfigContainer);
         if(response === "error") return console.error('Network Connection Error');
+        const autoWaterConfig = getAutoConfig();
+        socket.emit('saveAutoConfig', { autoWaterConfig: autoWaterConfig });
         hideElement(saveConfigBtn);
     })
 
