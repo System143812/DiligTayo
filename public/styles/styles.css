@@ -457,11 +457,13 @@ body {
 #plantContainer {
     display: flex;
     align-items: center;
-    justify-content: end;
+    justify-content: center;
     flex-direction: column;
     width: 300px;
     height: 100%;
     padding: 1rem 0;
+    padding-top: 5rem;
+
 }
 
 #roundNavContainer {

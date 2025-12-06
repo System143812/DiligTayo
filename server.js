@@ -11,6 +11,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+let recentHumidity = 0;
 
 app.use(cookieParser());
 app.use(cors());
@@ -61,6 +62,13 @@ async function saveAutoConfig(body, res, plantId) {
     return 'error';
 }
 
+async function updateHumidity(res, humidity) {
+    const query = "UPDATE plants SET humidity = ?";
+    const result = await executeSql(res, query, [humidity]);
+    if(result.affectedRows > 0) return 'success';
+    return 'error';
+}
+
 app.get('/api/plantId', async(req, res) => {
     res.status(200).json(await getPlantId(res));
 });
@@ -72,7 +80,6 @@ app.get('/api/plantData/:plantId', async(req, res) => {
 
 app.get('/api/logs', async(req, res) => {
     res.status(200).json(await getLogs(res));
-    
 });
 
 app.post('/api/saveAutoConfig/:plantId', async(req, res) => {
@@ -81,6 +88,19 @@ app.post('/api/saveAutoConfig/:plantId', async(req, res) => {
     res.status(500).json({message: 'database error'});
 })
 
+app.post('/api/updateHumidity', async(req, res) => {
+    const humidity = req.body.humidity;
+    if(humidity === null || Number.isNaN(humidity)) return res.status(500).send("Failed to update Humidity");
+    if(recentHumidity - humidity >= 1 || recentHumidity - humidity <= -1) {
+        if(await updateHumidity(res, humidity) === "success") {
+            io.emit('updateHumidity', { humidity: humidity });
+            return res.status(200).send('Updated Humidity')
+        }
+        return res.status(500).send("Failed to update humidity");
+    };
+    res.status(200).send(`Current humidity: ${humidity}`);
+});
+
 io.on("connection", (socket) => {
     let cookies = {};
     if (socket.handshake.headers.cookie) cookies = cookie.parse(socket.handshake.headers.cookie);
@@ -88,10 +108,7 @@ io.on("connection", (socket) => {
     
     socket.on('waterPlant', async(data) => {
         try {
-            io.emit('triggerWaterPump', { //eto yung mag ttrigger sa pump ng esp32
-                plantId: data.plantId,
-                amount: data.amount
-            });
+            const response = await fetch('/esp/water/');
             io.emit('updateLastWater', {
                 plantId: data.plantId,
                 timestamp: data.timestamp
@@ -140,6 +157,6 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port: ${PORT}`);
 });

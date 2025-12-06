@@ -67,6 +67,7 @@ let waterAmount = 12;
 let currentPlantIndex = 0;
 let currentImage;
 let nextImage;
+let current_humidity;
 let current_moisture;
 let last_water_timestamp;
 let plantCollection = [];
@@ -399,6 +400,11 @@ async function initDashboard(socket) {
             deautomatePlant();
         }
     }); 
+    socket.on('updateHumidity', (data) => {
+        current_humidity = data.humidity;
+        updatePlantStatus(last_water_timestamp, current_moisture, current_humidity);
+        updateProgressStatus(current_moisture, current_humidity);
+    });
     socket.on('updateAutoConfig', (data) => {
         if(data.autoWaterConfig.targets === plantCollection[currentPlantIndex]) {
             minMoistInput.value = data.autoWaterConfig.min_moisture;
@@ -627,8 +633,8 @@ async function initEventListeners(socket) {
         }
     });
 }
-
 async function clickInitUser() {
+    const isProduction = window.location.protocol === 'https:';
     usernameSubmitBtn.addEventListener('click', async() => {
         if(usernameInput.value === "") return showRequired(usernameInput);
         usernameInput.classList.remove('required');
@@ -636,17 +642,16 @@ async function clickInitUser() {
         Cookies.set("username",  username, {
             expires : 1,
             path : "/",
-            sameSite: "lax",
-            secure: true
+            sameSite: isProduction ? "none" : "lax",
+            secure: isProduction
         });
-        initWebsocketUser();
+        await initWebsocketUser();
         hideUserOverlay();
     });
 }
 
 async function initWebsocketUser() {
         socket = io();
-        socket.emit('getUsername');
         await initDashboard(socket);    
 } 
 
@@ -660,7 +665,7 @@ window.onload = async() => {
     // Cookies.remove("username"); //Pang force reset lang to ng cookies
     if(!Cookies.get("username")) {
         showUserOverlay();
-        await clickInitUser()
+        await clickInitUser();
     } else {
         hideUserOverlay();
         await initWebsocketUser();
