@@ -67,6 +67,7 @@ let waterAmount = 12;
 let currentPlantIndex = 0;
 let currentImage;
 let nextImage;
+let current_humidity;
 let current_moisture;
 let last_water_timestamp;
 let plantCollection = [];
@@ -399,6 +400,11 @@ async function initDashboard(socket) {
             deautomatePlant();
         }
     }); 
+    socket.on('updateHumidity', (data) => {
+        current_humidity = data.humidity;
+        updatePlantStatus(last_water_timestamp, current_moisture, current_humidity);
+        updateProgressStatus(current_moisture, current_humidity);
+    });
     socket.on('updateAutoConfig', (data) => {
         if(data.autoWaterConfig.targets === plantCollection[currentPlantIndex]) {
             minMoistInput.value = data.autoWaterConfig.min_moisture;
