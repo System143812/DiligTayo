@@ -225,6 +225,12 @@ function updatePlantStatus(last_water, moisture, humidity) {
     const mins = Math.floor(timeDiffMs / 60000);
     const hours = Math.floor(timeDiffMs / 3600000);
 
+    if (moisture <= 14 || hours > 72 || humidity <  20) {
+        plantStatus.innerText = 'Critical';
+        plantStatus.className = 'critical';
+        return;
+    }
+
     if(moisture > 85 || (moisture > 75 && mins > 5 )){
         plantStatus.innerText = 'Soaked';
         plantStatus.className = 'soaked';
@@ -246,12 +252,6 @@ function updatePlantStatus(last_water, moisture, humidity) {
     if (moisture >= 15 && moisture < 35 || (humidity < 40 && humidity >= 25 )) {
         plantStatus.innerText = 'Dry';
         plantStatus.className = 'dry';
-        return;
-    }
-
-    if (moisture <= 14 || hours > 72 || humidity <  25 || humidity > 85) {
-        plantStatus.innerText = 'Critical';
-        plantStatus.className = 'critical';
         return;
     }
 
@@ -400,6 +400,15 @@ async function initDashboard(socket) {
             deautomatePlant();
         }
     }); 
+    socket.on('updateMoisture', (data) => {
+        for (const plant of data) {
+            if(plant.plant_id === plantCollection[currentPlantIndex]) {
+                current_moisture = plant.moisture;
+                updatePlantStatus(last_water_timestamp, current_moisture, current_humidity);
+                updateProgressStatus(current_moisture, current_humidity);
+            }            
+        }
+    });
     socket.on('updateHumidity', (data) => {
         current_humidity = data.humidity;
         updatePlantStatus(last_water_timestamp, current_moisture, current_humidity);
