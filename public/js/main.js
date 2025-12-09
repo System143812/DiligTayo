@@ -1,3 +1,4 @@
+
 const loader = document.getElementById('loadingOverlay');
 const clickBtn = document.getElementById('clickMeBtn');
 const previousBtn = document.getElementById('previousBtn');
@@ -306,8 +307,8 @@ function updateProgressStatus(moisture, humidity) {
     document.getElementById('soilProgressPercentage').innerText = `${moisture}%`;
     document.getElementById('humidityPercentage').innerText = `${humidity}%`;
     document.getElementById('humidityProgressPercentage').innerText = `${humidity}%`;
-    document.getElementById('soilProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${moisture}%, var(--light-gray) ${moisture}%)`;
-    document.getElementById('humidityProgressBar').style.background = `linear-gradient(to right, var(--grayed-no-opacity) ${humidity}%, var(--light-gray) ${humidity}%)`;
+    document.getElementById('soilProgressBar').style.width = `${(100 - moisture)}%`;
+    document.getElementById('humidityProgressBar').style.width = `${(100 - humidity)}%`;
 }
 
 function activateAutoWater(socket) {
@@ -401,7 +402,8 @@ async function initDashboard(socket) {
         }
     }); 
     socket.on('updateMoisture', (data) => {
-        for (const plant of data) {
+        const plantMoistures = data.plantMoistures;
+        for (const plant of plantMoistures) {
             if(plant.plant_id === plantCollection[currentPlantIndex]) {
                 current_moisture = plant.moisture;
                 updatePlantStatus(last_water_timestamp, current_moisture, current_humidity);

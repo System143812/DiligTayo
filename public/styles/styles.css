@@ -923,13 +923,15 @@ body {
     margin-bottom: 0.25rem;
     background: linear-gradient(to right, var(--green-dark) 50%, var(--light-green) 70%);
     border-radius: 50px;
+    overflow: hidden;
 }
 
 .bars {
     display: flex;
+    margin-left: auto;
     height: 100%;
-    border-radius: 50px;
-    width: 100%;
+    background-color: var(--light-gray);
+    transition: all 0.5s ease;
 }
 
 .progress-percent {
@@ -937,6 +939,7 @@ body {
     text-align: center;
     width: 100%;
     color: var(--green-dark);
+    transition: all 0.5s ease;
 }
 
 @media (max-width: 800px){
