@@ -70,6 +70,8 @@ let currentImage;
 let nextImage;
 let current_humidity;
 let current_moisture;
+let currentPumpPin;
+let currentSoilPin;
 let last_water_timestamp;
 let plantCollection = [];
 
@@ -78,7 +80,9 @@ function getAutoConfig() {
         username: Cookies.get("username"),
         targets: plantCollection[currentPlantIndex],
         min_moisture: Number(minMoistInput.value),
-        max_moisture: Number(maxMoistInput.value)
+        max_moisture: Number(maxMoistInput.value),
+        pump_pin: currentPumpPin,
+        soil_pin: currentSoilPin
     }
     return autoWaterConfig;
 }
@@ -373,6 +377,8 @@ async function loadPlantData(currentIndex) {
     if(plantData.length === 0) return console.log("Theres no any plants yet.");//dapat placeholder ang nandito kaso katamad din
     updateProgressStatus(plantData.soil_moisture, plantData.humidity);   
     current_moisture = plantData.soil_moisture; 
+    currentPumpPin = plantData.pump_pin;
+    currentSoilPin = plantData.soil_pin;
     plantNickname.innerText = plantData.nickname;
     document.getElementById('scientificName').innerText = plantData.name;
     updateLastWater(plantData.last_water);
@@ -502,13 +508,17 @@ async function initEventListeners(socket) {
     });
 
     function waterPlantEvent() {
+        const autoWaterConfig = getAutoConfig();
         const timestamp = getSqlTimestamp();
         socket.emit('waterPlant', {
             plantId: plantCollection[currentPlantIndex],
             time: getTime(),
             timestamp: timestamp,
             plantNickname: plantNickname.innerText,
-            amount: waterAmount
+            amount: waterAmount,
+            pump_pin: autoWaterConfig.pump_pin,
+            soil_pin: autoWaterConfig.soil_pin,
+            max_moist: autoWaterConfig.max_moisture
         });
         updateLastWater(timestamp);
         last_water_timestamp = timestamp;
