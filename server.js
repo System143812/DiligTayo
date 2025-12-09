@@ -15,7 +15,7 @@ const espURLBASE = process.env.ESP_API_BASE;
 let recentHumidity = 0;
 
 const recentMoisture = [
-    {soil_pin: 4, moisture: 0},
+    {soil_pin: 32, moisture: 0},
     {soil_pin: 5, moisture: 0}
 ];
 
@@ -25,6 +25,24 @@ app.use(express.json());
 app.use('/', express.static('public'));
 
 
+function getTime(timestamp = null) {
+    const date = timestamp ?  new Date(timestamp) : new Date();
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
+}
+
+function getSqlTimestamp() {
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, "0");
+    const year = now.getFullYear();
+    const month = pad(now.getMonth() + 1);
+    const day = pad(now.getDate());
+    const hour = pad(now.getHours());
+    const min = pad(now.getMinutes());
+    const sec = pad(now.getSeconds());
+
+    return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
+}
+ 
 function failed(res, status, message) {
     res.status(status).json({status: 'failed', message: message});
 }
@@ -38,7 +56,7 @@ async function executeSql(res, query, params = []) {
             const [result] = await pool.execute(query, params);
             return result;
         }
-        
+         
     } catch (error) {
         console.log(error)
         res.status(500).json({status: "failed", message: `Database Error: ${error}`});
@@ -79,7 +97,7 @@ async function updateHumidity(res, humidity) {
 }
 
 async function updateMoisture(plant) {
-    const query = "UPDATE plants SET moisture = ? WHERE soil_pin = ?";
+    const query = "UPDATE plants SET soil_moisture = ? WHERE soil_pin = ?";
     try {
         const [result] = await pool.execute(query, [plant.moisture, plant.soil_pin]);
         if(result.affectedRows > 0) return "success";
@@ -145,13 +163,15 @@ app.post('/api/updateHumidity', async(req, res) => {
 
 app.post('/api/updateMoisture', async(req, res) => {
     let success = 0;
-    for (const plant of req.body) {
+    const plantMoistures = req.body[0];
+    for (const plant of plantMoistures) {
         for (const recentMoist of recentMoisture) {
+            // return console.log(plantMoistures);
             if(plant.soil_pin === recentMoist.soil_pin) {
                 if(recentMoist.moisture - plant.moisture >= 1 || recentMoist.moisture - plant.moisture <= -1) {
                     if(await updateMoisture(plant) === "success") success ++; //i-save sa db 
                 }
-                io.emit('updateMoisture', { moisture: plant.moisture });
+                io.emit('updateMoisture', { plantMoistures });
                 recentMoist.moisture = plant.moisture;
             }
         }         
@@ -161,7 +181,35 @@ app.post('/api/updateMoisture', async(req, res) => {
 });
 
 app.post('/api/esp/autoWater', async(req, res) => {
+    const data = req.body;
+    const autoBotName = "Diligtayo Bot auto";
+    if(!data) return res.status(500).send("Invalid request body");
+    const timestamp = getSqlTimestamp();
+    const time = getTime();
+    try {
+        io.emit('updateLastWater', {
+            plantId: data.plant_id,
+            timestamp: timestamp
+        })
+        io.emit('screenBubble', {
+            username: autoBotName,
+            plantNickname: data.plant_nickname,
+            amount: data.amount
+        });
+        io.emit('createLog', {
+            username: autoBotName,
+            time: time,
+            timestamp: timestamp,
+            plantNickname : data.plant_nickname,
+            amount: data.amount
+        });
     
+        await pool.execute("UPDATE plants SET last_water = ? WHERE plant_id = ?", [timestamp, data.plant_id]);
+        await pool.execute("INSERT INTO logs (log_detail) VALUES (?)", [`${autoBotName} watered ${data.plant_nickname} - around ${data.amount}mL`]);
+        res.status(200).send("Auto water success");
+    } catch (error) {
+        res.status(500).send(`Database Error: ${error}`);
+    }
 });
 
 io.on("connection", (socket) => {

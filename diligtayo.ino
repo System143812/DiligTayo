@@ -13,12 +13,15 @@ String urlBase = "http://192.168.8.142:3007"; //pang local lang to ah
 
 struct PlantConfig {
   int plant_id;
-  int plant_nickname;
+  JsonVariant plant_nickname;
   int soil_pin;
   int pump_pin;
   int auto_mode;
   int min_moist;
   int max_moist;
+  int is_watering;
+  int auto_watering;
+  int manual_watering;
 };
 
 PlantConfig plants[10];
@@ -40,7 +43,10 @@ void updatePlantConfig() {
   String payload = http.getString();
   StaticJsonDocument<2048>doc;
   DeserializationError err = deserializeJson(doc, payload);
-  if(err) return Serial.println("Failed to parse json");
+  if(err) { 
+    Serial.println("Failed to parse json");
+    return;
+  };
   JsonArray arr = doc.as<JsonArray>();
   plantSize = arr.size();
   for(int i = 0; i < plantSize; i++) {
@@ -65,28 +71,33 @@ float computeWaterAmount(int waterTimeSecs) {
 }
 
 float triggerWaterPump(int pump_pin, int soil_pin, int max_moist) {
-  Serial.print("Watering the plant...");
-  unsigned long start = millis();
-  unsigned long current;
-  unsigned long totalMillis;
-  float moisture;
-  digitalWrite(pump_pin, HIGH);
-  moisture = floor((analogRead(soil_pin)) / 4095 * 1000.0) / 10;
-  while(true) {
-    if(moisture < max_moist) {
-      if(millis() - start >= 1000) {
+  for(int i = 0; i < plantSize; i++) {
+    if(pump_pin == plants[i].pump_pin) {
+        plants[i].is_watering = 1;
+        Serial.print("Watering the plant...");
+        unsigned long start = millis();
+        unsigned long current;
+        unsigned long totalMillis;
+        float moisture;
+        digitalWrite(pump_pin, HIGH);
         moisture = floor((analogRead(soil_pin)) / 4095 * 1000.0) / 10;
-        
-      }
-    } else {
-      digitalWrite(pump_pin, LOW);
-      totalMillis = millis() - start;
-      break;
+        while(plants[i].is_watering == 1) {
+          if(moisture < max_moist) {
+            if(millis() - start >= 500) {
+              moisture = floor((analogRead(soil_pin)) / 4095 * 1000.0) / 10;
+            }
+          } else {
+            digitalWrite(pump_pin, LOW);
+            totalMillis = millis() - start;
+            plants[i].is_watering = 0;
+          }
+        }
+        plants[i].auto_watering = 0;
+        plants[i].manual_watering = 0;
+        unsigned long secs = totalMillis / 1000;
+        return computeWaterAmount(secs);
     }
   }
-  unsigned long secs = totalMillis / 1000;
-  return computeWaterAmount(secs);
-
 }
 
 void manualPump() {
@@ -97,6 +108,9 @@ void manualPump() {
   StaticJsonDocument<728>doc;
   String body = server.arg("plain");
   DeserializationError err = deserializeJson(doc, body);
+  for(int i = 0; i < plantSize; i++){
+    if(doc["pump_pin"] == plants[i].pump_pin) plants[i].manual_watering = 1;
+  }
   float waterAmount = triggerWaterPump(doc["pump_pin"], doc["soil_pin"], doc["max_moist"]);
   StaticJsonDocument<128>res;
   res["amount"] = waterAmount;
@@ -105,7 +119,10 @@ void manualPump() {
   server.send(200, "application/json", json);
 }
 
-void autoPump(int plant_id, String plant_nickname, int pump_pin, int soil_pin, int max_moist) {
+void autoPump(int plant_id, JsonVariant plant_nickname, int pump_pin, int soil_pin, int max_moist) {
+  for(int i = 0; i < plantSize; i++){
+    if(pump_pin == plants[i].pump_pin) plants[i].auto_watering = 1;
+  }
   float waterAmount = triggerWaterPump(pump_pin, soil_pin, max_moist);
   HTTPClient http;
 
@@ -147,15 +164,24 @@ void updateMoisture() {
   if(millis() - soilMillis >= 2000) {
     soilMillis = millis();
     StaticJsonDocument<2048>doc;
-    JsonArray arr = doc.to<JsonArray>();
+    JsonArray arr = doc.createNestedArray();
 
     for(int i = 0; i < plantSize; i++) {
-      JsonObject obj = arr.add();
-      float moisture = floor(analogRead(plants[i].soil_pin) / 4095 * 1000.0) / 10.0;
+      JsonObject obj = arr.createNestedObject();
+      float rawMoist = analogRead(plants[i].soil_pin);
+      float moisture = rawMoist == 0 ? 0 : 100 - (floor( rawMoist / 4095.0 * 1000.0) / 10.0);
       obj["plant_id"] = plants[i].plant_id;
       obj["soil_pin"] = plants[i].soil_pin;
       obj["moisture"] = moisture;
-      if(plants[i].min_moist >= moisture && plants[i].auto_mode == 1) {
+      if(plants[i].auto_watering == 1 && plants[i].auto_mode == 0) {
+        plants[i].is_watering = 0;
+        digitalWrite(plants[i].pump_pin, LOW);
+      } 
+      else if(plants[i].manual_watering == 1 && plants[i].auto_mode == 1) {
+        plants[i].is_watering = 0;
+        digitalWrite(plants[i].pump_pin, LOW);
+      }
+      else if(plants[i].min_moist >= moisture && plants[i].auto_mode == 1) {
         if(digitalRead(plants[i].pump_pin) == HIGH) {
           Serial.print(".");
         } else {
@@ -167,7 +193,7 @@ void updateMoisture() {
             plants[i].max_moist
           );
         }
-      } 
+      }
     }
     HTTPClient http;
     http.begin(urlBase + "/api/updateMoisture");
@@ -208,7 +234,7 @@ void setup() {
     server.on("/api/esp/updatePlantConfig", HTTP_POST, updatePlantConfig);
     server.begin();
     updatePlantConfig();
-    Serial.print("Esp server is now running on port: 80");
+    Serial.println("Esp server is now running on port: 80");
     dht.begin();
   }
 }
