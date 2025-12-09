@@ -16,7 +16,7 @@ let recentHumidity = 0;
 
 const recentMoisture = [
     {soil_pin: 32, moisture: 0},
-    {soil_pin: 5, moisture: 0}
+    {soil_pin: 33, moisture: 0}
 ];
 
 app.use(cookieParser());
@@ -167,7 +167,9 @@ app.post('/api/updateMoisture', async(req, res) => {
     for (const plant of plantMoistures) {
         for (const recentMoist of recentMoisture) {
             // return console.log(plantMoistures);
+            
             if(plant.soil_pin === recentMoist.soil_pin) {
+                // console.log(plant);
                 if(recentMoist.moisture - plant.moisture >= 1 || recentMoist.moisture - plant.moisture <= -1) {
                     if(await updateMoisture(plant) === "success") success ++; //i-save sa db 
                 }
@@ -176,7 +178,7 @@ app.post('/api/updateMoisture', async(req, res) => {
             }
         }         
     }
-    if(!success) return res.status(500).send("Failed tp update moisture");
+    if(!success) return res.status(500).send("Failed to update moisture");
     res.status(200).send(`Updated moisture of ${success} plants`);
 });
 
@@ -221,6 +223,7 @@ io.on("connection", (socket) => {
         try {
             const targetPlant = {pump_pin: data.pump_pin, soil_pin: data.soil_pin, max_moist: data.max_moist};
             let amount;
+            console.log(targetPlant);
             try {
                 const response = await fetch(`${espURLBASE}/api/esp/waterPump`, { 
                     method: "POST",
@@ -231,6 +234,7 @@ io.on("connection", (socket) => {
                 });
                 const dataRes = await response.json();
                 if(!dataRes) return console.log("Failed to water plant");
+                console.log(dataRes);
                 amount = dataRes.amount;
             } catch (error) {
                return console.error(`Failed to connect to ESP32: ${error}`); 
