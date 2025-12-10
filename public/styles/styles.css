@@ -699,15 +699,15 @@ body {
     transition: all 0.25s ease;
 }
 
-/* #clickMeBtn.auto-mode {
+#clickMeBtn.auto-mode {
     pointer-events: none;
     background-color: var(--grayed-low-opacity);
     border: solid var(--grayed-text) 1px;
     color: var(--grayed-text);
     opacity: 0.75;
-} */
+}
 
-#clickMeBtn.auto-mode {
+#clickMeBtn.water-mode {
     pointer-events: none;
     opacity: 0.75;
     color: var(--kape-bg);

@@ -170,7 +170,7 @@ app.post('/api/updateMoisture', async(req, res) => {
             
             if(plant.soil_pin === recentMoist.soil_pin) {
                 // console.log(plant);
-                if(recentMoist.moisture - plant.moisture >= 1 || recentMoist.moisture - plant.moisture <= -1) {
+                if(recentMoist.moisture - plant.moisture >= 0.5 || recentMoist.moisture - plant.moisture <= -0.5) {
                     if(await updateMoisture(plant) === "success") success ++; //i-save sa db 
                 }
                 io.emit('updateMoisture', { plantMoistures });
@@ -188,6 +188,7 @@ app.post('/api/esp/announceWaterResult', async(req, res) => {
     const timestamp = getSqlTimestamp();
     const time = getTime();
     try {
+        io.emit('waterButtonNormal', {plant_id: data.plant_id});
         io.emit('updateLastWater', {
             plantId: data.plant_id,
             timestamp: timestamp
@@ -220,6 +221,7 @@ io.on("connection", (socket) => {
     socket.username = cookies.username || "Unknown user";
     socket.on('waterPlant', async(data) => {
         try {
+            io.emit('waterButtonWatering', {plant_id: data.plantId});
             const targetPlant = {name: socket.username, pump_pin: data.pump_pin, soil_pin: data.soil_pin, max_moist: data.max_moist};
             let amount;
             try {
@@ -235,7 +237,8 @@ io.on("connection", (socket) => {
                 // console.log(dataRes);
                 amount = dataRes.amount;
             } catch (error) {
-               return console.error(`Failed to connect to ESP32: ${error}`); 
+                io.emit('waterButtonNormal', {plant_id: data.plant_id});
+                return console.error(`Failed to connect to ESP32: ${error}`); 
             }
             io.emit('updateLastWater', {
                 plantId: data.plantId,

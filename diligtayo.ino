@@ -189,7 +189,7 @@ void checkWaterState() {
 }
 
 void updateHumidity() {
-  if(millis() - humidityMillis >= 3000) {
+  if(millis() - humidityMillis >= 2000) {
     humidityMillis = millis();
 
     HTTPClient http;
