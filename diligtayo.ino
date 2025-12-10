@@ -7,8 +7,8 @@
 #define DHTPIN 2
 #define DHTTYPE DHT22
 
-const char* ssid = "ssid";
-const char* password = "pass";
+const char* ssid = "Wi-Fi";
+const char* password = "9slselc1o3ro";
 String urlBase = "http://192.168.8.142:3007"; //pang local lang to ah
 int mlHandicapTime = 200;
 int mlPerSec = 5; //eto ung i-ccalibrate for better accuracy
