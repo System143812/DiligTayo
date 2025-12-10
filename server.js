@@ -182,9 +182,8 @@ app.post('/api/updateMoisture', async(req, res) => {
     res.status(200).send(`Updated moisture of ${success} plants`);
 });
 
-app.post('/api/esp/autoWater', async(req, res) => {
+app.post('/api/esp/announceWaterResult', async(req, res) => {
     const data = req.body;
-    const autoBotName = "Diligtayo Bot auto";
     if(!data) return res.status(500).send("Invalid request body");
     const timestamp = getSqlTimestamp();
     const time = getTime();
@@ -194,12 +193,12 @@ app.post('/api/esp/autoWater', async(req, res) => {
             timestamp: timestamp
         })
         io.emit('screenBubble', {
-            username: autoBotName,
+            username: data.name,
             plantNickname: data.plant_nickname,
             amount: data.amount
         });
         io.emit('createLog', {
-            username: autoBotName,
+            username: data.name,
             time: time,
             timestamp: timestamp,
             plantNickname : data.plant_nickname,
@@ -207,9 +206,10 @@ app.post('/api/esp/autoWater', async(req, res) => {
         });
     
         await pool.execute("UPDATE plants SET last_water = ? WHERE plant_id = ?", [timestamp, data.plant_id]);
-        await pool.execute("INSERT INTO logs (log_detail) VALUES (?)", [`${autoBotName} watered ${data.plant_nickname} - around ${data.amount}mL`]);
+        await pool.execute("INSERT INTO logs (log_detail) VALUES (?)", [`${data.name} watered ${data.plant_nickname} - around ${data.amount}mL`]);
         res.status(200).send("Auto water success");
     } catch (error) {
+        // console.log(error);
         res.status(500).send(`Database Error: ${error}`);
     }
 });
@@ -218,12 +218,10 @@ io.on("connection", (socket) => {
     let cookies = {};
     if (socket.handshake.headers.cookie) cookies = cookie.parse(socket.handshake.headers.cookie);
     socket.username = cookies.username || "Unknown user";
-    
     socket.on('waterPlant', async(data) => {
         try {
-            const targetPlant = {pump_pin: data.pump_pin, soil_pin: data.soil_pin, max_moist: data.max_moist};
+            const targetPlant = {name: socket.username, pump_pin: data.pump_pin, soil_pin: data.soil_pin, max_moist: data.max_moist};
             let amount;
-            console.log(targetPlant);
             try {
                 const response = await fetch(`${espURLBASE}/api/esp/waterPump`, { 
                     method: "POST",
@@ -234,7 +232,7 @@ io.on("connection", (socket) => {
                 });
                 const dataRes = await response.json();
                 if(!dataRes) return console.log("Failed to water plant");
-                console.log(dataRes);
+                // console.log(dataRes);
                 amount = dataRes.amount;
             } catch (error) {
                return console.error(`Failed to connect to ESP32: ${error}`); 
