@@ -407,6 +407,18 @@ async function initDashboard(socket) {
             deautomatePlant();
         }
     }); 
+    socket.on('waterButtonNormal', (data) => {
+        if(data.plant_id === plantCollection[currentPlantIndex]) {
+            clickBtn.classList.remove('water-mode');
+            if (!clickBtn.classList.contains("auto-mode")) clickBtn.innerText = "Water Plant";
+        }
+    });
+    socket.on('waterButtonWatering', (data) => {
+        if(data.plant_id === plantCollection[currentPlantIndex]) {
+            clickBtn.classList.add('water-mode');
+            clickBtn.innerText = "Watering...";
+        }
+    });
     socket.on('updateMoisture', (data) => {
         const plantMoistures = data.plantMoistures;
         for (const plant of plantMoistures) {
