@@ -434,6 +434,7 @@ async function initDashboard(socket) {
     });
     socket.on('updateLastWater', (data) => {
         if(data.plantId === plantCollection[currentPlantIndex]){
+            last_water_timestamp = data.timestamp;
             updateLastWater(data.timestamp);
         }
     });
