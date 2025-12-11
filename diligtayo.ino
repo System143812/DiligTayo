@@ -7,8 +7,8 @@
 #define DHTPIN 2
 #define DHTTYPE DHT22
 
-const char* ssid = "Wi-Fi";
-const char* password = "9slselc1o3ro";
+const char* ssid = "ssid";
+const char* password = "pass";
 String urlBase = "http://192.168.8.142:3007"; //pang local lang to ah
 int mlHandicapTime = 200;
 int mlPerSec = 5; //eto ung i-ccalibrate for better accuracy
@@ -64,7 +64,7 @@ void updatePlantConfig() {
     plants[i].min_moist = arr[i]["min_moisture"];
     plants[i].max_moist = arr[i]["max_moisture"];
 
-    pinMode(plants[i].soil_pin, INPUT_PULLDOWN);
+    pinMode(plants[i].soil_pin, INPUT);
     pinMode(plants[i].pump_pin, OUTPUT);
   }
   server.send(200, "application/json", R"({"message":"Updated Plant Config"})");
