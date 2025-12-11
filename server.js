@@ -16,7 +16,7 @@ let recentHumidity = 0;
 
 const recentMoisture = [
     {soil_pin: 32, moisture: 0},
-    {soil_pin: 33, moisture: 0}
+    {soil_pin: 34, moisture: 0}
 ];
 
 app.use(cookieParser());
