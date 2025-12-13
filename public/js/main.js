@@ -371,6 +371,16 @@ function deautomatePlant() {
     clickBtn.innerText = 'Water Plant';
 }
 
+function wateringPlantState() {
+    clickBtn.classList.add('water-mode');
+    clickBtn.innerText = "Watering...";
+}
+
+function normalPlantState() {
+    clickBtn.classList.remove('water-mode');
+    if (!clickBtn.classList.contains("auto-mode")) clickBtn.innerText = "Water Plant";
+}
+
 async function loadPlantData(currentIndex) {
     const plantData = await fetchGetData(`/api/plantData/${plantCollection[currentIndex]}`);
     if(plantData === 'error') return console.log("Network Connection Error");//dapat popup module nalabas dito kaso katamad
@@ -378,7 +388,7 @@ async function loadPlantData(currentIndex) {
     updateProgressStatus(plantData.soil_moisture, plantData.humidity);   
     current_moisture = plantData.soil_moisture; 
     currentPumpPin = plantData.pump_pin;
-    currentSoilPin = plantData.soil_pin;
+    currentSoilPin = plantData.soil_pin; 
     plantNickname.innerText = plantData.nickname;
     document.getElementById('scientificName').innerText = plantData.name;
     updateLastWater(plantData.last_water);
@@ -387,6 +397,7 @@ async function loadPlantData(currentIndex) {
     last_water_timestamp = plantData.last_water;
     updatePlantStatus(plantData.last_water, plantData.soil_moisture, plantData.humidity);
     plantData.auto ? automatePlant() : deautomatePlant();
+    plantData.is_watering === 1 ? wateringPlantState() : normalPlantState(); 
     nextImage = {image: plantData.image, no_bg: plantData.no_bg};
 }
 
@@ -409,14 +420,12 @@ async function initDashboard(socket) {
     }); 
     socket.on('waterButtonNormal', (data) => {
         if(data.plant_id === plantCollection[currentPlantIndex]) {
-            clickBtn.classList.remove('water-mode');
-            if (!clickBtn.classList.contains("auto-mode")) clickBtn.innerText = "Water Plant";
+            normalPlantState();
         }
     });
     socket.on('waterButtonWatering', (data) => {
         if(data.plant_id === plantCollection[currentPlantIndex]) {
-            clickBtn.classList.add('water-mode');
-            clickBtn.innerText = "Watering...";
+            wateringPlantState();
         }
     });
     socket.on('updateMoisture', (data) => {

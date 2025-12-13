@@ -150,6 +150,7 @@ app.post('/api/saveAutoConfig/:plantId', async(req, res) => {
 
 app.post('/api/updateHumidity', async(req, res) => {
     const humidity = req.body.humidity;
+    // console.log(req.body);
     if(humidity === null || Number.isNaN(humidity)) return res.status(500).send("Failed to update Humidity");
     if(recentHumidity - humidity >= 1 || recentHumidity - humidity <= -1) {
         if(await updateHumidity(res, humidity) === "success") {
@@ -187,8 +188,10 @@ app.post('/api/esp/announceWaterResult', async(req, res) => {
     if(!data) return res.status(500).send("Invalid request body");
     const timestamp = getSqlTimestamp();
     const time = getTime();
+    console.log(data);
     try {
         io.emit('waterButtonNormal', {plant_id: data.plant_id});
+        await pool.execute("UPDATE plants SET is_watering = 0 WHERE plant_id = ?", [data.plant_id]);
         io.emit('updateLastWater', {
             plantId: data.plant_id,
             timestamp: timestamp
@@ -205,7 +208,6 @@ app.post('/api/esp/announceWaterResult', async(req, res) => {
             plantNickname : data.plant_nickname,
             amount: data.amount
         });
-    
         await pool.execute("UPDATE plants SET last_water = ? WHERE plant_id = ?", [timestamp, data.plant_id]);
         await pool.execute("INSERT INTO logs (log_detail) VALUES (?)", [`${data.name} watered ${data.plant_nickname} - around ${data.amount}mL`]);
         res.status(200).send("Auto water success");
@@ -223,8 +225,8 @@ io.on("connection", (socket) => {
         try {
             io.emit('waterButtonWatering', {plant_id: data.plantId});
             const targetPlant = {name: socket.username, pump_pin: data.pump_pin, soil_pin: data.soil_pin, max_moist: data.max_moist};
-            let amount;
             try {
+                await pool.execute("UPDATE plants SET is_watering = 1 WHERE plant_id = ?", [data.plantId]);
                 const response = await fetch(`${espURLBASE}/api/esp/waterPump`, { 
                     method: "POST",
                     headers: {
@@ -234,31 +236,15 @@ io.on("connection", (socket) => {
                 });
                 const dataRes = await response.json();
                 if(!dataRes) return console.log("Failed to water plant");
-                // console.log(dataRes);
-                amount = dataRes.amount;
+                console.log(dataRes);
             } catch (error) {
-                io.emit('waterButtonNormal', {plant_id: data.plant_id});
+                io.emit('waterButtonNormal', {plant_id: data.plantId});
+                await pool.execute("UPDATE plants SET is_watering = 0 WHERE plant_id = ?", [data.plantId]);
                 return console.error(`Failed to connect to ESP32: ${error}`); 
             }
-            io.emit('updateLastWater', {
-                plantId: data.plantId,
-                timestamp: data.timestamp
-            })
-            io.emit('screenBubble', {
-                username: socket.username,
-                plantNickname: data.plantNickname,
-                amount: amount
-            });
-            io.emit('createLog', {
-                username: socket.username,
-                time: data.time,
-                timestamp: data.timestamp,
-                plantNickname : data.plantNickname,
-                amount: amount
-            });
-            await pool.execute("UPDATE plants SET last_water = ? WHERE plant_id = ?", [data.timestamp, data.plantId]);
-            await pool.execute("INSERT INTO logs (log_detail) VALUES (?)", [`${socket.username} watered ${data.plantNickname} - around ${amount}mL`]);
         } catch (error) {
+            io.emit('waterButtonNormal', {plant_id: data.plantId});
+            await pool.execute("UPDATE plants SET is_watering = 0 WHERE plant_id = ?", [data.plantId]);
             console.error(`Failed to insert log: ${error}`);
         }     
     });
