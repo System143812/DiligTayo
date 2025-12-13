@@ -235,10 +235,10 @@ void checkWaterState() {
     if(plants[i].auto_watering == 1 && plants[i].auto_mode == 0) {
       turnOffPump(plants[i].pump_pin);
     }
-    if(moisture >= plants[i].max_moist && plants[i].is_watering == 1) {
+    if(moisture >= plants[i].max_moist && digitalRead(plants[i].pump_pin) == LOW) {
       turnOffPump(plants[i].pump_pin);
     }
-    if(plants[i].is_watering == 1 && millis() - plants[i].waterStartTime >= (mlHandicapTime / mlPerSec) * 1000) {
+    if(digitalRead(plants[i].pump_pin) == LOW && millis() - plants[i].waterStartTime >= (mlHandicapTime / mlPerSec) * 1000) {
       turnOffPump(plants[i].pump_pin);
     }
   }
