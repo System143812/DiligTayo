@@ -7,9 +7,9 @@
 #define DHTPIN 18
 #define DHTTYPE DHT22
 
-const char* ssid = "gabby";
-const char* password = "gabby1234";
-String urlBase = "http://192.168.8.142:3007"; //pang local lang to ah
+const char* ssid = "DiligTayo Network";
+const char* password = "diligtayo";
+String urlBase = "http://10.223.145.186:3007"; //pang local lang to ah
 int mlHandicapTime = 200;
 int mlPerSec = 5; //eto ung i-ccalibrate for better accuracy
 String botName = "DiligTayo Bot auto";
